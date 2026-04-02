@@ -1,0 +1,1830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com https://cdnjs.cloudflare.com; connect-src 'self' wss: ws:;">
+<meta name="referrer" content="no-referrer"/>
+<title>VEILX — Be anyone. Say anything. Leave nothing.</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #080810;
+  --surface: #0f0f1a;
+  --surface2: #16162a;
+  --border: rgba(120,120,255,0.15);
+  --accent: #7b6fff;
+  --accent2: #ff6b9d;
+  --text: #e8e8f0;
+  --muted: #6b6b8a;
+  --success: #4fffb0;
+  --danger: #ff4f7b;
+  --mono: 'Space Mono', monospace;
+  --display: 'Syne', sans-serif;
+  --radius: 12px;
+  --glow: 0 0 30px rgba(123,111,255,0.2);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--display);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Background grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(123,111,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(123,111,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Screens */
+.screen { display:none; min-height:100vh; position:relative; z-index:1; }
+.screen.active { display:flex; flex-direction:column; }
+
+/* ═══════════════════════════════
+   LANDING SCREEN
+═══════════════════════════════ */
+#landing {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+}
+
+.logo-wrap { margin-bottom: 2rem; animation: fadeDown 0.8s ease; }
+.logo {
+  font-size: clamp(3rem, 10vw, 7rem);
+  font-weight: 800;
+  letter-spacing: -4px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+}
+.tagline {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
+  letter-spacing: 2px;
+  animation: fadeUp 1s ease 0.2s both;
+}
+
+.identity-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  max-width: 420px;
+  width: 100%;
+  margin: 2rem auto;
+  animation: fadeUp 0.8s ease 0.3s both;
+  box-shadow: var(--glow);
+}
+
+.identity-label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 3px;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+}
+
+.avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  background: var(--surface2);
+}
+
+.codename {
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+
+.codename-sub {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.recovery-box {
+  background: var(--surface2);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.recovery-key {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--success);
+  letter-spacing: 2px;
+  word-break: break-all;
+}
+
+.recovery-warn {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--danger);
+  margin-top: 0.5rem;
+  letter-spacing: 1px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: var(--display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #5a4fff);
+  color: white;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(123,111,255,0.4); }
+.btn-primary:active { transform: scale(0.98); }
+
+.btn-secondary {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+}
+.btn-secondary:hover { color: var(--text); border-color: var(--accent); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.75rem;
+  width: auto;
+  padding: 0.4rem 0.8rem;
+}
+.btn-ghost:hover { color: var(--text); }
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.65rem;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.restore-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: var(--success);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+  outline: none;
+  transition: border-color 0.2s;
+  margin-bottom: 0.5rem;
+}
+.restore-input:focus { border-color: var(--accent); }
+.restore-input::placeholder { color: var(--muted); letter-spacing: 1px; }
+
+/* ═══════════════════════════════
+   MAIN APP
+═══════════════════════════════ */
+#app { flex-direction: row; height: 100vh; overflow: hidden; }
+
+/* Sidebar */
+.sidebar {
+  width: 260px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  padding: 1.25rem 1.25rem 1rem;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-identity {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sidebar-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.sidebar-name {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-weight: 700;
+}
+.sidebar-status {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--success);
+  margin-top: 2px;
+}
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  margin-right: 4px;
+  animation: pulse 2s infinite;
+}
+
+.sidebar-section {
+  padding: 0.75rem 1.25rem 0.25rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1.25rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--muted);
+  transition: all 0.15s;
+  border-left: 2px solid transparent;
+  font-weight: 600;
+}
+.nav-item:hover { color: var(--text); background: var(--surface2); }
+.nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(123,111,255,0.08); }
+.nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+.sidebar-bottom {
+  margin-top: auto;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.security-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--success);
+}
+
+/* Main Content */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.topbar {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.topbar-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.topbar-actions { display: flex; gap: 0.5rem; }
+
+.icon-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-family: var(--display);
+  font-weight: 600;
+  transition: all 0.15s;
+}
+.icon-btn:hover { color: var(--text); border-color: var(--accent); }
+
+.content-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+/* Panels */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ═══════════════════════════════
+   HOME PANEL
+═══════════════════════════════ */
+.welcome-banner {
+  background: linear-gradient(135deg, rgba(123,111,255,0.15), rgba(255,107,157,0.1));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.welcome-banner::before {
+  content: 'VEILX';
+  position: absolute;
+  right: -10px;
+  top: -15px;
+  font-size: 5rem;
+  font-weight: 800;
+  color: rgba(123,111,255,0.08);
+  pointer-events: none;
+  letter-spacing: -4px;
+}
+
+.welcome-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.welcome-sub {
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+
+.zone-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.zone-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--glow); }
+.zone-card:active { transform: scale(0.98); }
+
+.zone-icon { font-size: 1.8rem; margin-bottom: 0.75rem; }
+.zone-name { font-size: 0.95rem; font-weight: 800; margin-bottom: 0.25rem; }
+.zone-desc { font-size: 0.75rem; color: var(--muted); line-height: 1.4; }
+
+.zone-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: rgba(123,111,255,0.2);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+  letter-spacing: 1px;
+}
+
+.live-badge {
+  background: rgba(79,255,176,0.15);
+  color: var(--success);
+}
+
+/* ═══════════════════════════════
+   ROOMS PANEL
+═══════════════════════════════ */
+.rooms-header {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.room-input {
+  flex: 1;
+  min-width: 180px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.65rem 1rem;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  outline: none;
+  transition: border-color 0.2s;
+  text-transform: uppercase;
+}
+.room-input:focus { border-color: var(--accent); }
+.room-input::placeholder { color: var(--muted); letter-spacing: 1px; text-transform: none; }
+
+.btn-sm {
+  padding: 0.65rem 1.25rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: var(--display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn-accent { background: linear-gradient(135deg, var(--accent), #5a4fff); color: white; }
+.btn-accent:hover { transform: translateY(-1px); box-shadow: 0 5px 20px rgba(123,111,255,0.4); }
+
+.btn-outline { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+.btn-outline:hover { color: var(--text); border-color: var(--accent); }
+
+.room-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.room-type-card {
+  background: var(--surface);
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.room-type-card:hover { border-color: var(--accent); background: var(--surface2); }
+.room-type-card.selected { border-color: var(--accent); background: rgba(123,111,255,0.1); }
+.room-type-card .rt-icon { font-size: 1.5rem; margin-bottom: 0.4rem; }
+.room-type-card .rt-name { font-size: 0.75rem; font-weight: 600; }
+
+/* ═══════════════════════════════
+   CHAT ROOM
+═══════════════════════════════ */
+#chat-room {
+  display: none;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+#chat-room.active { display: flex; }
+
+.chat-header {
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.room-code-display {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  color: var(--accent);
+  cursor: pointer;
+  letter-spacing: 2px;
+}
+.room-code-display:hover { border-color: var(--accent); }
+
+.online-count {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--success);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.message {
+  display: flex;
+  gap: 0.75rem;
+  animation: slideIn 0.2s ease;
+  max-width: 80%;
+}
+
+.msg-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.msg-body {}
+.msg-meta {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.msg-name { color: var(--accent); }
+
+.msg-bubble {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0 12px 12px 12px;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.message.own { flex-direction: row-reverse; align-self: flex-end; }
+.message.own .msg-bubble {
+  background: rgba(123,111,255,0.15);
+  border-color: rgba(123,111,255,0.3);
+  border-radius: 12px 0 12px 12px;
+}
+.message.own .msg-meta { flex-direction: row-reverse; }
+.message.own .msg-name { color: var(--accent2); }
+
+.system-msg {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+  padding: 0.25rem 0;
+}
+
+.chat-input-area {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.chat-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 0.65rem 1.25rem;
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s;
+  resize: none;
+  line-height: 1.4;
+}
+.chat-input:focus { border-color: var(--accent); }
+.chat-input::placeholder { color: var(--muted); }
+
+.send-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #5a4fff);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.send-btn:hover { transform: scale(1.1); box-shadow: 0 4px 15px rgba(123,111,255,0.5); }
+.send-btn:active { transform: scale(0.95); }
+
+/* ═══════════════════════════════
+   PROBLEMS PANEL
+═══════════════════════════════ */
+.post-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.post-textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 0.875rem;
+  outline: none;
+  resize: none;
+  height: 80px;
+  margin-bottom: 0.75rem;
+  transition: border-color 0.2s;
+  line-height: 1.5;
+}
+.post-textarea:focus { border-color: var(--accent); }
+.post-textarea::placeholder { color: var(--muted); }
+
+.category-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.chip {
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  font-size: 0.7rem;
+  font-family: var(--mono);
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.chip.selected { background: rgba(123,111,255,0.15); border-color: var(--accent); color: var(--accent); }
+
+.problem-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  transition: border-color 0.2s;
+}
+.problem-card:hover { border-color: rgba(123,111,255,0.3); }
+
+.problem-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.problem-avatar { font-size: 1.2rem; }
+.problem-user { font-family: var(--mono); font-size: 0.7rem; color: var(--accent); font-weight: 700; }
+.problem-time { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); }
+.cat-tag {
+  margin-left: auto;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  background: rgba(123,111,255,0.15);
+  color: var(--accent);
+}
+
+.problem-text { font-size: 0.9rem; line-height: 1.6; margin-bottom: 1rem; }
+
+.problem-actions { display: flex; gap: 0.75rem; align-items: center; }
+.vote-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.3rem 0.75rem;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.vote-btn:hover { border-color: var(--accent); color: var(--accent); }
+.vote-btn.voted { background: rgba(123,111,255,0.15); border-color: var(--accent); color: var(--accent); }
+
+.reply-count { font-family: var(--mono); font-size: 0.65rem; color: var(--muted); margin-left: auto; }
+
+/* ═══════════════════════════════
+   CODE PANEL
+═══════════════════════════════ */
+.code-editor-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.editor-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+
+.lang-select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.editor-area {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 400px;
+}
+
+.code-pane {
+  border-right: 1px solid var(--border);
+}
+
+.code-textarea {
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  background: transparent;
+  border: none;
+  color: #a8ff78;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  padding: 1rem;
+  outline: none;
+  resize: none;
+  line-height: 1.6;
+  tab-size: 2;
+}
+
+.preview-pane {
+  background: white;
+  position: relative;
+}
+.preview-pane iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  border: none;
+}
+
+/* ═══════════════════════════════
+   TOAST
+═══════════════════════════════ */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 0.65rem 1.5rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--text);
+  z-index: 1000;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.success { border-color: var(--success); color: var(--success); }
+.toast.error { border-color: var(--danger); color: var(--danger); }
+
+/* ═══════════════════════════════
+   MODAL
+═══════════════════════════════ */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  max-width: 420px;
+  width: 100%;
+  animation: fadeUp 0.2s ease;
+}
+
+.modal-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 0.5rem; }
+.modal-sub { font-size: 0.8rem; color: var(--muted); margin-bottom: 1.5rem; line-height: 1.5; }
+
+/* ANIMATIONS */
+@keyframes fadeDown { from { opacity:0; transform: translateY(-20px); } to { opacity:1; transform: translateY(0); } }
+@keyframes fadeUp { from { opacity:0; transform: translateY(20px); } to { opacity:1; transform: translateY(0); } }
+@keyframes slideIn { from { opacity:0; transform: translateX(-10px); } to { opacity:1; transform: translateX(0); } }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* RESPONSIVE */
+@media (max-width: 700px) {
+  .sidebar { display: none; }
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .editor-area { grid-template-columns: 1fr; }
+  .code-pane { border-right: none; border-bottom: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ LANDING ═══════════════════ -->
+<div class="screen active" id="landing">
+  <div class="logo-wrap">
+    <div class="logo">VEILX</div>
+    <div class="tagline">BE ANYONE · SAY ANYTHING · LEAVE NOTHING</div>
+  </div>
+
+  <div class="identity-card" id="identity-card">
+    <div class="identity-label">⚡ Your Anonymous Identity</div>
+
+    <div class="avatar-row">
+      <div class="avatar" id="land-avatar"></div>
+      <div>
+        <div class="codename" id="land-codename">Generating...</div>
+        <div class="codename-sub">Zero-knowledge identity · No tracking</div>
+      </div>
+    </div>
+
+    <div class="recovery-box">
+      <div class="identity-label" style="margin-bottom:0.4rem">🔑 Recovery Key — Save This Now</div>
+      <div class="recovery-key" id="land-key">---</div>
+      <div class="recovery-warn">⚠ We never store this. Lost key = new identity only.</div>
+    </div>
+
+    <button class="btn btn-primary" onclick="downloadKey()">💾 Save Key & Enter VEILX</button>
+    <button class="btn btn-secondary" onclick="toggleRestore()">🔄 Restore with existing key</button>
+
+    <div id="restore-section" style="display:none; margin-top:1rem;">
+      <div class="divider">OR RESTORE</div>
+      <input class="restore-input" id="restore-input" placeholder="Enter your recovery key..." maxlength="24"/>
+      <button class="btn btn-primary" onclick="restoreIdentity()">Restore Identity</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MAIN APP ═══════════════════ -->
+<div class="screen" id="app">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo">VEILX</div>
+
+    <div class="sidebar-identity">
+      <div class="sidebar-avatar" id="sb-avatar"></div>
+      <div>
+        <div class="sidebar-name" id="sb-name"></div>
+        <div class="sidebar-status"><span class="status-dot"></span>Anonymous · Encrypted</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">Navigate</div>
+    <div class="nav-item active" onclick="switchPanel('home', this)">
+      <span class="nav-icon">🏠</span> Home
+    </div>
+    <div class="nav-item" onclick="switchPanel('rooms', this)">
+      <span class="nav-icon">🚪</span> Rooms
+    </div>
+    <div class="nav-item" onclick="switchPanel('problems', this)">
+      <span class="nav-icon">🆘</span> Ask Community
+    </div>
+    <div class="nav-item" onclick="switchPanel('code', this)">
+      <span class="nav-icon">💻</span> Codespace
+    </div>
+    <div class="nav-item" onclick="switchPanel('games', this)">
+      <span class="nav-icon">🎮</span> Gaming Zone
+    </div>
+
+    <div class="sidebar-section">Settings</div>
+    <div class="nav-item" onclick="switchPanel('settings', this)">
+      <span class="nav-icon">⚙️</span> Settings
+    </div>
+    <div class="nav-item" onclick="newIdentity()">
+      <span class="nav-icon">🎭</span> New Identity
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="security-badge">🔒 E2E Encrypted · Zero Logs</div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+    <!-- Topbar -->
+    <div class="topbar" id="topbar">
+      <div class="topbar-title" id="topbar-title">Home</div>
+      <div class="topbar-actions">
+        <button class="icon-btn" onclick="showKeyModal()">🔑 My Key</button>
+        <button class="icon-btn" onclick="logout()">← Exit</button>
+      </div>
+    </div>
+
+    <!-- Chat Room (replaces content when in room) -->
+    <div id="chat-room">
+      <div class="chat-header">
+        <button class="icon-btn" onclick="leaveRoom()">← Back</button>
+        <div>
+          <div style="font-weight:800;font-size:0.95rem" id="room-name-display">Room</div>
+          <div class="online-count"><span class="status-dot"></span><span id="online-count">1 online</span></div>
+        </div>
+        <div class="room-code-display" onclick="copyRoomCode()" id="room-code-display" title="Click to copy">---</div>
+      </div>
+      <div class="messages" id="messages"></div>
+      <div class="chat-input-area">
+        <textarea class="chat-input" id="chat-input" placeholder="Type a message..." rows="1"
+          onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content-area" id="content-area">
+
+      <!-- HOME PANEL -->
+      <div class="panel active" id="panel-home">
+        <div class="welcome-banner">
+          <div class="welcome-title" id="welcome-name">Welcome back 👋</div>
+          <div class="welcome-sub">You are completely anonymous. No IP logged. No identity stored on our servers. Your recovery key is your only link to this session.</div>
+        </div>
+
+        <div class="grid-3">
+          <div class="zone-card" onclick="switchPanel('rooms', document.querySelector('[onclick*=rooms]'))">
+            <div class="zone-badge live-badge">LIVE</div>
+            <div class="zone-icon">🚪</div>
+            <div class="zone-name">Rooms</div>
+            <div class="zone-desc">Join or create private encrypted chat rooms</div>
+          </div>
+          <div class="zone-card" onclick="switchPanel('problems', document.querySelector('[onclick*=problems]'))">
+            <div class="zone-badge">ACTIVE</div>
+            <div class="zone-icon">🆘</div>
+            <div class="zone-name">Ask Community</div>
+            <div class="zone-desc">Post your problem anonymously, get real solutions</div>
+          </div>
+          <div class="zone-card" onclick="switchPanel('code', document.querySelector('[onclick*=code]'))">
+            <div class="zone-badge">BETA</div>
+            <div class="zone-icon">💻</div>
+            <div class="zone-name">Codespace</div>
+            <div class="zone-desc">Write, run and share code in your browser</div>
+          </div>
+          <div class="zone-card" onclick="switchPanel('games', document.querySelector('[onclick*=games]'))">
+            <div class="zone-badge">SOON</div>
+            <div class="zone-icon">🎮</div>
+            <div class="zone-name">Gaming Zone</div>
+            <div class="zone-desc">Play anonymous multiplayer browser games</div>
+          </div>
+          <div class="zone-card" onclick="quickJoinRandom()">
+            <div class="zone-icon">🎲</div>
+            <div class="zone-name">Random Chat</div>
+            <div class="zone-desc">Match with a stranger anonymously for a quick chat</div>
+          </div>
+          <div class="zone-card" onclick="switchPanel('problems', document.querySelector('[onclick*=problems]'))">
+            <div class="zone-icon">🔥</div>
+            <div class="zone-name">Trending</div>
+            <div class="zone-desc">See what the community is discussing right now</div>
+          </div>
+        </div>
+
+        <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.75rem">SECURITY STATUS</div>
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.65rem 1rem;font-family:var(--mono);font-size:0.7rem;color:var(--success)">🔒 E2E Encryption: ON</div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.65rem 1rem;font-family:var(--mono);font-size:0.7rem;color:var(--success)">🛡 IP Masking: ON</div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.65rem 1rem;font-family:var(--mono);font-size:0.7rem;color:var(--success)">📵 No Cookies: ON</div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.65rem 1rem;font-family:var(--mono);font-size:0.7rem;color:var(--success)">🗑 Auto-Delete: ON</div>
+        </div>
+      </div>
+
+      <!-- ROOMS PANEL -->
+      <div class="panel" id="panel-rooms">
+        <div style="font-size:1.1rem;font-weight:800;margin-bottom:1rem">Join or Create a Room</div>
+
+        <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.5rem">ROOM TYPE</div>
+        <div class="room-type-grid" id="room-type-grid">
+          <div class="room-type-card selected" onclick="selectRoomType(this,'💬 Chill Chat')">
+            <div class="rt-icon">💬</div><div class="rt-name">Chill Chat</div>
+          </div>
+          <div class="room-type-card" onclick="selectRoomType(this,'🆘 Help & Support')">
+            <div class="rt-icon">🆘</div><div class="rt-name">Help & Support</div>
+          </div>
+          <div class="room-type-card" onclick="selectRoomType(this,'🧠 Debate')">
+            <div class="rt-icon">🧠</div><div class="rt-name">Debate</div>
+          </div>
+          <div class="room-type-card" onclick="selectRoomType(this,'🎭 Roleplay')">
+            <div class="rt-icon">🎭</div><div class="rt-name">Roleplay</div>
+          </div>
+          <div class="room-type-card" onclick="selectRoomType(this,'📚 Study Group')">
+            <div class="rt-icon">📚</div><div class="rt-name">Study Group</div>
+          </div>
+          <div class="room-type-card" onclick="selectRoomType(this,'🔥 Rant Room')">
+            <div class="rt-icon">🔥</div><div class="rt-name">Rant Room</div>
+          </div>
+        </div>
+
+        <div class="rooms-header">
+          <input class="room-input" id="room-code-input" placeholder="Enter 6-digit room code" maxlength="6"/>
+          <button class="btn-sm btn-outline" onclick="joinRoom()">Join Room</button>
+          <button class="btn-sm btn-accent" onclick="createRoom()">+ Create Room</button>
+        </div>
+
+        <div id="active-rooms-list">
+          <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.75rem">YOUR RECENT ROOMS</div>
+          <div style="color:var(--muted);font-size:0.85rem;font-family:var(--mono)">No rooms yet. Create or join one above.</div>
+        </div>
+      </div>
+
+      <!-- PROBLEMS PANEL -->
+      <div class="panel" id="panel-problems">
+        <div class="post-box">
+          <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.75rem">POST ANONYMOUSLY</div>
+          <textarea class="post-textarea" id="problem-input" placeholder="Describe your problem openly. Nobody knows who you are..."></textarea>
+          <div class="category-chips" id="cat-chips">
+            <div class="chip selected" onclick="selectCat(this,'General')">General</div>
+            <div class="chip" onclick="selectCat(this,'Mental Health')">Mental Health</div>
+            <div class="chip" onclick="selectCat(this,'Relationships')">Relationships</div>
+            <div class="chip" onclick="selectCat(this,'Finance')">Finance</div>
+            <div class="chip" onclick="selectCat(this,'Career')">Career</div>
+            <div class="chip" onclick="selectCat(this,'Tech')">Tech</div>
+            <div class="chip" onclick="selectCat(this,'Studies')">Studies</div>
+          </div>
+          <button class="btn-sm btn-accent" onclick="postProblem()">Post Problem →</button>
+        </div>
+
+        <div id="problems-list"></div>
+      </div>
+
+      <!-- CODE PANEL -->
+      <div class="panel" id="panel-code">
+        <div class="code-editor-wrap">
+          <div class="editor-topbar">
+            <select class="lang-select" id="lang-select" onchange="changeLang()">
+              <option value="html">HTML</option>
+              <option value="js">JavaScript</option>
+              <option value="css">CSS</option>
+            </select>
+            <button class="btn-sm btn-accent" onclick="runCode()">▶ Run</button>
+            <button class="btn-sm btn-outline" onclick="shareCode()">⬡ Share</button>
+            <button class="btn-sm btn-outline" onclick="clearCode()">✕ Clear</button>
+          </div>
+          <div class="editor-area">
+            <div class="code-pane">
+              <textarea class="code-textarea" id="code-input" spellcheck="false"
+                placeholder="// Write your code here..."
+                onkeydown="handleTab(event)"></textarea>
+            </div>
+            <div class="preview-pane">
+              <iframe id="code-preview" sandbox="allow-scripts"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GAMES PANEL -->
+      <div class="panel" id="panel-games">
+        <div class="welcome-banner">
+          <div class="welcome-title">🎮 Gaming Zone</div>
+          <div class="welcome-sub">Anonymous multiplayer games. No account. No tracking. Just play.</div>
+        </div>
+        <div class="grid-3">
+          <div class="zone-card" onclick="launchGame('tictactoe')">
+            <div class="zone-badge live-badge">PLAYABLE</div>
+            <div class="zone-icon">⭕</div>
+            <div class="zone-name">Tic Tac Toe</div>
+            <div class="zone-desc">Classic 2-player game in browser</div>
+          </div>
+          <div class="zone-card">
+            <div class="zone-badge">SOON</div>
+            <div class="zone-icon">🃏</div>
+            <div class="zone-name">Card Wars</div>
+            <div class="zone-desc">Anonymous multiplayer card game</div>
+          </div>
+          <div class="zone-card">
+            <div class="zone-badge">SOON</div>
+            <div class="zone-icon">🧩</div>
+            <div class="zone-name">Word Duel</div>
+            <div class="zone-desc">Real-time anonymous word battle</div>
+          </div>
+        </div>
+        <div id="game-area"></div>
+      </div>
+
+      <!-- SETTINGS PANEL -->
+      <div class="panel" id="panel-settings">
+        <div style="font-size:1.1rem;font-weight:800;margin-bottom:1.5rem">Settings</div>
+
+        <div class="problem-card" style="margin-bottom:1rem">
+          <div style="font-weight:800;margin-bottom:0.5rem">🎭 Identity</div>
+          <div style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem">Your anonymous codename and avatar. Regenerate anytime for a fresh identity.</div>
+          <div style="display:flex;gap:0.75rem;align-items:center;margin-bottom:1rem">
+            <div class="avatar" id="settings-avatar" style="width:48px;height:48px;font-size:1.5rem"></div>
+            <div>
+              <div class="codename" id="settings-codename" style="font-size:1rem"></div>
+              <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)">Current identity</div>
+            </div>
+          </div>
+          <button class="btn-sm btn-outline" onclick="newIdentity()" style="width:100%">🎲 Regenerate Identity</button>
+        </div>
+
+        <div class="problem-card" style="margin-bottom:1rem">
+          <div style="font-weight:800;margin-bottom:0.5rem">🔑 Recovery Key</div>
+          <div style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem">Your key to restore this identity on any device.</div>
+          <button class="btn-sm btn-outline" onclick="showKeyModal()" style="width:100%">View & Download Key</button>
+        </div>
+
+        <div class="problem-card">
+          <div style="font-weight:800;margin-bottom:0.5rem">🗑 Data</div>
+          <div style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem">All chat history is already auto-deleted. Clear local storage to remove everything from this device.</div>
+          <button class="btn-sm" style="background:rgba(255,79,123,0.15);color:var(--danger);border:1px solid var(--danger);border-radius:8px;width:100%;cursor:pointer;font-family:var(--display);font-weight:600;font-size:0.85rem;padding:0.65rem" onclick="clearAll()">⚠ Clear All Local Data</button>
+        </div>
+      </div>
+
+    </div><!-- end content-area -->
+  </div><!-- end main -->
+</div><!-- end app -->
+
+<!-- ═══════════════════ MODALS ═══════════════════ -->
+<div class="modal-overlay" id="key-modal">
+  <div class="modal">
+    <div class="modal-title">🔑 Your Recovery Key</div>
+    <div class="modal-sub">This is your only way to restore your identity. Save it somewhere safe. We cannot recover it for you.</div>
+    <div class="recovery-box" style="margin-bottom:1.25rem">
+      <div class="recovery-key" id="modal-key-display">---</div>
+    </div>
+    <button class="btn btn-primary" onclick="downloadKey(); closeModal('key-modal')">💾 Download Key File</button>
+    <button class="btn btn-secondary" onclick="copyKey()">📋 Copy to Clipboard</button>
+    <button class="btn btn-secondary" onclick="closeModal('key-modal')">Close</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════
+// VEILX CORE ENGINE
+// ════════════════════════════════════════════
+
+const AVATARS = ['🦊','🐺','🦁','🐯','🦅','🦉','🐉','🦋','🐬','🦈','🐙','🦜','🌙','⚡','🔮','🎭','🌊','🔥','❄️','🌀'];
+const ADJ = ['Silent','Shadow','Ghost','Phantom','Mystic','Neon','Stealth','Cipher','Volt','Storm','Dark','Swift','Iron','Void','Echo','Rogue','Blaze','Nova','Apex','Zero'];
+const NOUNS = ['Fox','Wolf','Hawk','Tiger','Dragon','Specter','Cipher','Storm','Nexus','Raven','Cobra','Lynx','Viper','Falcon','Ghost','Phoenix','Titan','Wraith','Saber','Nova'];
+
+let identity = null;
+let currentRoom = null;
+let selectedRoomType = '💬 Chill Chat';
+let selectedCat = 'General';
+let problems = [];
+let messages = [];
+let onlineCount = 1;
+
+// ── Identity System ──────────────────────────
+
+function generateKey() {
+  const seg = () => Math.random().toString(36).substring(2,6).toUpperCase();
+  return `${seg()}-${seg()}-${seg()}-${seg()}`;
+}
+
+function hashKey(key) {
+  let h = 0;
+  for (let i=0; i<key.length; i++) { h = ((h<<5)-h)+key.charCodeAt(i); h|=0; }
+  return Math.abs(h);
+}
+
+function generateIdentityFromKey(key) {
+  const h = hashKey(key);
+  const emoji = AVATARS[h % AVATARS.length];
+  const adj = ADJ[(h >> 3) % ADJ.length];
+  const noun = NOUNS[(h >> 7) % NOUNS.length];
+  const num = (h % 9000) + 1000;
+  return { key, emoji, codename: `${adj}${noun}#${num}` };
+}
+
+function loadIdentity() {
+  const stored = localStorage.getItem('veilx_id');
+  if (stored) {
+    try { identity = JSON.parse(stored); return true; }
+    catch(e) {}
+  }
+  return false;
+}
+
+function saveIdentity(id) {
+  localStorage.setItem('veilx_id', JSON.stringify(id));
+}
+
+// ── Init ────────────────────────────────────
+
+window.onload = function() {
+  if (loadIdentity()) {
+    enterApp();
+  } else {
+    const key = generateKey();
+    identity = generateIdentityFromKey(key);
+    document.getElementById('land-avatar').textContent = identity.emoji;
+    document.getElementById('land-codename').textContent = identity.codename;
+    document.getElementById('land-key').textContent = identity.key;
+  }
+  loadProblems();
+};
+
+function toggleRestore() {
+  const s = document.getElementById('restore-section');
+  s.style.display = s.style.display === 'none' ? 'block' : 'none';
+}
+
+function restoreIdentity() {
+  const key = document.getElementById('restore-input').value.trim().toUpperCase();
+  if (key.length < 10) { showToast('Enter a valid recovery key', 'error'); return; }
+  identity = generateIdentityFromKey(key);
+  saveIdentity(identity);
+  enterApp();
+  showToast('Identity restored!', 'success');
+}
+
+function enterApp() {
+  document.getElementById('landing').classList.remove('active');
+  document.getElementById('app').classList.add('active');
+  saveIdentity(identity);
+  updateUI();
+  renderProblems();
+  loadCode();
+}
+
+function updateUI() {
+  document.getElementById('sb-avatar').textContent = identity.emoji;
+  document.getElementById('sb-name').textContent = identity.codename;
+  document.getElementById('welcome-name').textContent = `Welcome, ${identity.codename} 👋`;
+  document.getElementById('settings-avatar').textContent = identity.emoji;
+  document.getElementById('settings-codename').textContent = identity.codename;
+  document.getElementById('modal-key-display').textContent = identity.key;
+}
+
+// ── Navigation ──────────────────────────────
+
+function switchPanel(name, navEl) {
+  if (currentRoom) leaveRoom();
+
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (navEl) navEl.classList.add('active');
+
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('panel-' + name);
+  if (panel) panel.classList.add('active');
+
+  document.getElementById('chat-room').classList.remove('active');
+  document.getElementById('content-area').style.display = '';
+  document.getElementById('topbar').style.display = '';
+
+  const titles = { home:'Home', rooms:'Rooms', problems:'Ask Community', code:'Codespace', games:'Gaming Zone', settings:'Settings' };
+  document.getElementById('topbar-title').textContent = titles[name] || name;
+
+  if (name === 'settings') updateUI();
+}
+
+// ── Rooms ────────────────────────────────────
+
+function selectRoomType(el, type) {
+  selectedRoomType = type;
+  document.querySelectorAll('.room-type-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function generateRoomCode() {
+  return Math.random().toString(36).substring(2,8).toUpperCase();
+}
+
+function createRoom() {
+  const code = generateRoomCode();
+  openChatRoom(code, selectedRoomType, true);
+}
+
+function joinRoom() {
+  const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+  if (code.length !== 6) { showToast('Room code must be 6 characters', 'error'); return; }
+  openChatRoom(code, selectedRoomType, false);
+}
+
+function openChatRoom(code, type, isNew) {
+  currentRoom = { code, type };
+  document.getElementById('content-area').style.display = 'none';
+  document.getElementById('topbar').style.display = 'none';
+  document.getElementById('chat-room').classList.add('active');
+  document.getElementById('room-name-display').textContent = type;
+  document.getElementById('room-code-display').textContent = `# ${code}`;
+  onlineCount = Math.floor(Math.random() * 12) + 1;
+  document.getElementById('online-count').textContent = `${onlineCount} online`;
+
+  messages = [];
+  renderMessages();
+  addSystemMsg(isNew ? `Room created · Code: ${code} · Share to invite` : `Joined room ${code}`);
+  addSystemMsg('🔒 End-to-end encrypted · No logs kept · Auto-deletes on exit');
+
+  // Simulate someone joining
+  if (!isNew) {
+    setTimeout(() => {
+      simulateMessage('Welcome! What brings you here?');
+    }, 1200);
+  }
+}
+
+function leaveRoom() {
+  currentRoom = null;
+  document.getElementById('chat-room').classList.remove('active');
+  document.getElementById('content-area').style.display = '';
+  document.getElementById('topbar').style.display = '';
+  switchPanel('rooms', document.querySelectorAll('.nav-item')[1]);
+}
+
+function copyRoomCode() {
+  if (!currentRoom) return;
+  navigator.clipboard.writeText(currentRoom.code).then(() => showToast(`Copied: ${currentRoom.code}`, 'success'));
+}
+
+function quickJoinRandom() {
+  openChatRoom(generateRoomCode(), '🎲 Random Chat', false);
+}
+
+// ── Messages ────────────────────────────────
+
+function addSystemMsg(text) {
+  messages.push({ type: 'system', text });
+  renderMessages();
+}
+
+function renderMessages() {
+  const container = document.getElementById('messages');
+  container.innerHTML = messages.map(m => {
+    if (m.type === 'system') return `<div class="system-msg">${m.text}</div>`;
+    const own = m.sender === identity.codename;
+    return `<div class="message ${own?'own':''}">
+      <div class="msg-avatar">${m.avatar}</div>
+      <div class="msg-body">
+        <div class="msg-meta"><span class="msg-name">${m.sender}</span><span>${m.time}</span></div>
+        <div class="msg-bubble">${escHtml(m.text)}</div>
+      </div>
+    </div>`;
+  }).join('');
+  container.scrollTop = container.scrollHeight;
+}
+
+function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || !currentRoom) return;
+  messages.push({
+    sender: identity.codename,
+    avatar: identity.emoji,
+    text,
+    time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
+  });
+  input.value = '';
+  input.style.height = 'auto';
+  renderMessages();
+
+  // Simulate reply after random delay
+  if (Math.random() > 0.5) {
+    setTimeout(() => simulateMessage(getRandomReply(text)), 800 + Math.random() * 2000);
+  }
+}
+
+const REPLIES = [
+  'Interesting point 🤔','Totally agree!','I see what you mean','Tell me more','Haha that\'s relatable','Real talk 💯','Same honestly','Never thought of it that way','That makes sense','Valid 👍'];
+
+function getRandomReply(msg) {
+  return REPLIES[Math.floor(Math.random() * REPLIES.length)];
+}
+
+const OTHER_NAMES = ['ShadowWolf#2341','GhostFox#9182','NeonTiger#5519','CipherHawk#3377','VoidRaven#6621'];
+const OTHER_AVS = ['🐺','👻','🐯','🦅','🦜'];
+
+function simulateMessage(text) {
+  if (!currentRoom) return;
+  const idx = Math.floor(Math.random() * OTHER_NAMES.length);
+  messages.push({
+    sender: OTHER_NAMES[idx],
+    avatar: OTHER_AVS[idx],
+    text,
+    time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
+  });
+  renderMessages();
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// ── Problems ────────────────────────────────
+
+function selectCat(el, cat) {
+  selectedCat = cat;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function postProblem() {
+  const text = document.getElementById('problem-input').value.trim();
+  if (text.length < 10) { showToast('Please describe your problem in more detail', 'error'); return; }
+
+  const p = {
+    id: Date.now(),
+    text,
+    cat: selectedCat,
+    sender: identity.codename,
+    avatar: identity.emoji,
+    time: 'Just now',
+    votes: 0,
+    replies: 0,
+    voted: false
+  };
+  problems.unshift(p);
+  saveProblems();
+  renderProblems();
+  document.getElementById('problem-input').value = '';
+  showToast('Posted anonymously ✓', 'success');
+}
+
+function vote(id) {
+  const p = problems.find(x => x.id === id);
+  if (!p) return;
+  p.voted = !p.voted;
+  p.votes += p.voted ? 1 : -1;
+  saveProblems();
+  renderProblems();
+}
+
+function saveProblems() {
+  localStorage.setItem('veilx_problems', JSON.stringify(problems));
+}
+
+function loadProblems() {
+  const s = localStorage.getItem('veilx_problems');
+  if (s) { try { problems = JSON.parse(s); } catch(e) {} }
+
+  if (problems.length === 0) {
+    problems = [
+      { id:1, text:'I feel anxious before every exam even when I have prepared well. How do I control this?', cat:'Mental Health', sender:'GhostFox#1192', avatar:'🐺', time:'2h ago', votes:24, replies:8, voted:false },
+      { id:2, text:'My landlord is refusing to return my deposit without any valid reason. What can I do legally?', cat:'Finance', sender:'SilentHawk#4421', avatar:'🦅', time:'5h ago', votes:17, replies:5, voted:false },
+      { id:3, text:'Best way to learn coding from scratch in 2025 with no CS background?', cat:'Tech', sender:'NeonWolf#8833', avatar:'🐯', time:'1d ago', votes:41, replies:19, voted:false },
+    ];
+  }
+}
+
+function renderProblems() {
+  const container = document.getElementById('problems-list');
+  if (!container) return;
+  container.innerHTML = problems.map(p => `
+    <div class="problem-card">
+      <div class="problem-meta">
+        <div class="problem-avatar">${p.avatar}</div>
+        <div>
+          <div class="problem-user">${p.sender}</div>
+          <div class="problem-time">${p.time}</div>
+        </div>
+        <div class="cat-tag">${p.cat}</div>
+      </div>
+      <div class="problem-text">${escHtml(p.text)}</div>
+      <div class="problem-actions">
+        <button class="vote-btn ${p.voted?'voted':''}" onclick="vote(${p.id})">▲ ${p.votes}</button>
+        <button class="vote-btn" onclick="replyToProblem(${p.id})">💬 Reply</button>
+        <div class="reply-count">${p.replies} replies</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function replyToProblem(id) {
+  const p = problems.find(x => x.id === id);
+  if (!p) return;
+  openChatRoom(generateRoomCode(), `🆘 Help: ${p.cat}`, true);
+  setTimeout(() => {
+    addSystemMsg(`Discussing: "${p.text.substring(0,60)}..."`);
+  }, 300);
+}
+
+// ── Codespace ───────────────────────────────
+
+const STARTER = {
+  html: `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: sans-serif; background: #0a0a1a; color: #e8e8f0; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    h1 { background: linear-gradient(135deg, #7b6fff, #ff6b9d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  </style>
+</head>
+<body>
+  <h1>Hello from VEILX Codespace 🚀</h1>
+</body>
+</html>`,
+  js: `// JavaScript playground
+const arr = [1, 2, 3, 4, 5];
+const doubled = arr.map(n => n * 2);
+console.log('Doubled:', doubled);
+
+// Output appears in browser console`,
+  css: `/* CSS playground - preview in right panel */
+body {
+  background: linear-gradient(135deg, #080810, #1a1a2e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+}
+
+.box {
+  width: 100px;
+  height: 100px;
+  background: linear-gradient(135deg, #7b6fff, #ff6b9d);
+  border-radius: 20px;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}`
+};
+
+function loadCode() {
+  const saved = localStorage.getItem('veilx_code');
+  const lang = document.getElementById('lang-select')?.value || 'html';
+  document.getElementById('code-input').value = saved || STARTER[lang];
+}
+
+function changeLang() {
+  const lang = document.getElementById('lang-select').value;
+  document.getElementById('code-input').value = STARTER[lang];
+}
+
+function runCode() {
+  const lang = document.getElementById('lang-select').value;
+  const code = document.getElementById('code-input').value;
+  localStorage.setItem('veilx_code', code);
+  const frame = document.getElementById('code-preview');
+  let html = code;
+  if (lang === 'js') html = `<script>${code}<\/script>`;
+  if (lang === 'css') html = `<style>${code}</style><div class="box"></div>`;
+  frame.srcdoc = html;
+  showToast('Running... ▶', 'success');
+}
+
+function shareCode() {
+  const code = document.getElementById('code-input').value;
+  const encoded = btoa(unescape(encodeURIComponent(code)));
+  const shareCode = encoded.substring(0,6).toUpperCase();
+  navigator.clipboard.writeText(shareCode);
+  showToast(`Share code copied: ${shareCode}`, 'success');
+}
+
+function clearCode() {
+  document.getElementById('code-input').value = '';
+  document.getElementById('code-preview').srcdoc = '';
+}
+
+function handleTab(e) {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const ta = e.target;
+    const s = ta.selectionStart;
+    ta.value = ta.value.substring(0, s) + '  ' + ta.value.substring(ta.selectionEnd);
+    ta.selectionStart = ta.selectionEnd = s + 2;
+  }
+}
+
+// ── Games ────────────────────────────────────
+
+function launchGame(type) {
+  if (type !== 'tictactoe') { showToast('Coming soon!', 'success'); return; }
+  const area = document.getElementById('game-area');
+  let board = Array(9).fill('');
+  let curr = 'X';
+  let over = false;
+
+  const render = () => {
+    area.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;max-width:340px;margin-top:1rem">
+        <div style="font-weight:800;margin-bottom:1rem;font-family:var(--mono);font-size:0.75rem;color:var(--muted)">TIC TAC TOE · ANONYMOUS</div>
+        <div id="ttt-status" style="margin-bottom:1rem;font-size:0.9rem;color:var(--accent)">Player ${curr}'s turn</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem">
+          ${board.map((cell,i) => `
+            <div onclick="tttClick(${i})" style="
+              background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+              height:80px;display:flex;align-items:center;justify-content:center;
+              font-size:2rem;cursor:pointer;transition:all 0.15s;font-weight:800;
+              color:${cell==='X'?'var(--accent)':'var(--accent2)'}
+            ">${cell}</div>
+          `).join('')}
+        </div>
+        <button class="btn-sm btn-outline" onclick="launchGame('tictactoe')" style="width:100%">↺ Reset</button>
+      </div>`;
+
+    window.tttClick = (i) => {
+      if (board[i] || over) return;
+      board[i] = curr;
+      const win = checkWin(board);
+      if (win) {
+        over = true;
+        render();
+        document.getElementById('ttt-status').textContent = `🎉 Player ${curr} wins!`;
+        document.getElementById('ttt-status').style.color = 'var(--success)';
+      } else if (board.every(c => c)) {
+        over = true;
+        render();
+        document.getElementById('ttt-status').textContent = "It's a draw!";
+      } else {
+        curr = curr === 'X' ? 'O' : 'X';
+        render();
+      }
+    };
+  };
+
+  const checkWin = (b) => {
+    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    return lines.some(([a,c,d]) => b[a] && b[a]===b[c] && b[a]===b[d]);
+  };
+
+  render();
+}
+
+// ── Identity & Key ───────────────────────────
+
+function downloadKey() {
+  const content = `VEILX Recovery Key\n==================\n${identity.key}\n\nCodename: ${identity.codename}\n\nWARNING: Keep this safe. We cannot recover a lost key.\nDo not share this with anyone.`;
+  const blob = new Blob([content], { type:'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'VEILX_recovery_key.txt';
+  a.click();
+  enterApp();
+}
+
+function copyKey() {
+  navigator.clipboard.writeText(identity.key).then(() => showToast('Key copied!', 'success'));
+}
+
+function newIdentity() {
+  if (!confirm('Generate a new identity? Your current codename will change. Your key is NOT affected.')) return;
+  const key = identity.key;
+  const h = hashKey(key + Date.now());
+  identity.emoji = AVATARS[h % AVATARS.length];
+  const adj = ADJ[(h >> 3) % ADJ.length];
+  const noun = NOUNS[(h >> 7) % NOUNS.length];
+  identity.codename = `${adj}${noun}#${(h%9000)+1000}`;
+  saveIdentity(identity);
+  updateUI();
+  showToast('New identity generated!', 'success');
+}
+
+function logout() {
+  if (!confirm('Leave VEILX? Your data stays encrypted locally.')) return;
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('landing').classList.add('active');
+  document.getElementById('land-avatar').textContent = identity.emoji;
+  document.getElementById('land-codename').textContent = identity.codename;
+  document.getElementById('land-key').textContent = identity.key;
+}
+
+function clearAll() {
+  if (!confirm('Clear ALL local data? This cannot be undone.')) return;
+  localStorage.clear();
+  location.reload();
+}
+
+// ── Modals ───────────────────────────────────
+
+function showKeyModal() {
+  document.getElementById('modal-key-display').textContent = identity.key;
+  document.getElementById('key-modal').classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// ── Toast ────────────────────────────────────
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type}`;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── Utils ────────────────────────────────────
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
