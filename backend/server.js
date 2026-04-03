@@ -103,7 +103,12 @@ setInterval(() => {
 
 // Health check (no sensitive data exposed)
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: Date.now() });
+  res.status(200).json({ status: 'ok' });
+});
+
+// Railway also checks root sometimes
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
 });
 // ════════════════════════════════════════════
 // VEILX Phase 2 Step 5 — Report System
@@ -490,10 +495,11 @@ app.get('*', (req, res) => {
 });
 
 // Start server
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🔒 VEILX Server running on port ${PORT}`);
   console.log(`📡 Zero-knowledge mode: ON`);
   console.log(`🗑  Auto-delete: ON`);
   console.log(`🛡  Rate limiting: ON`);
+  console.log(`\n→ Listening on 0.0.0.0:${PORT}\n`);
 });
 
