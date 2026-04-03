@@ -3,14 +3,14 @@
 // Secure anonymous platform server
 // Run: npm install && node server.js
 // ════════════════════════════════════════════
-
-const express = require('express');
+const { getAIResponse, calculateTrendScore } = require('./ai');const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const cors = require('cors');
 const crypto = require('crypto');
+const { signMessage, getRoomToken, deleteRoomToken, sanitize, checkMsgRate, cleanupSocket } = require('./encryption');
 const path = require('path');
 
 const app = express();
@@ -104,6 +104,213 @@ setInterval(() => {
 // Health check (no sensitive data exposed)
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: Date.now() });
+});
+// ════════════════════════════════════════════
+// VEILX Phase 2 Step 5 — Report System
+// Add this block after the /api/health route
+// ════════════════════════════════════════════
+
+// In-memory report store — never logged to disk
+const reportStore = new Map();
+// Structure: reportId -> { type, contentId, reason, createdAt }
+
+// Auto-actions: content reported 3+ times gets auto-hidden
+const reportCounts = new Map();
+// Structure: contentId -> count
+
+// ── POST a report ────────────────────────────
+app.post('/api/report', (req, res) => {
+  const { type, contentId, reason } = req.body;
+
+  // Validate inputs
+  if (!type || !contentId || !reason) {
+    return res.status(400).json({ error: 'Missing fields' });
+  }
+
+  const allowedTypes = ['message', 'problem', 'room'];
+  if (!allowedTypes.includes(type)) {
+    return res.status(400).json({ error: 'Invalid report type' });
+  }
+
+  const allowedReasons = [
+    'harassment',
+    'spam',
+    'illegal',
+    'hate_speech',
+    'self_harm',
+    'misinformation',
+    'other'
+  ];
+  if (!allowedReasons.includes(reason)) {
+    return res.status(400).json({ error: 'Invalid reason' });
+  }
+
+  const reportId = Date.now().toString();
+
+  // Store report — NO identity, NO IP
+  reportStore.set(reportId, {
+    type,
+    contentId: contentId.substring(0, 100),
+    reason,
+    createdAt: Date.now()
+  });
+
+  // Track report count for this content
+  const count = (reportCounts.get(contentId) || 0) + 1;
+  reportCounts.set(contentId, count);
+
+  // Auto-action: 3+ reports = content flagged
+  let autoHidden = false;
+  if (count >= 3) {
+    autoHidden = true;
+    // Broadcast to room if it's a message report
+    if (type === 'message') {
+      io.emit('content_hidden', { contentId });
+    }
+  }
+
+  res.json({
+    success: true,
+    message: 'Report received. Thank you for keeping VEILX safe.',
+    autoHidden
+  });
+});
+
+// ── GET report count for content (mod use) ───
+app.get('/api/report/count/:contentId', (req, res) => {
+  const count = reportCounts.get(req.params.contentId) || 0;
+  res.json({ count });
+});
+
+// ── Auto-cleanup reports after 7 days ────────
+setInterval(() => {
+  const now = Date.now();
+  const sevenDays = 7 * 24 * 60 * 60 * 1000;
+  for (const [id, r] of reportStore.entries()) {
+    if (now - r.createdAt > sevenDays) {
+      reportStore.delete(id);
+    }
+  }
+}, 24 * 60 * 60 * 1000); // runs once per day
+
+// ── Phase 2 Step 3: Trending Algorithm ──────
+// In-memory problem store with trending scores
+// Problems auto-expire after 30 days
+// Server never stores identity — only content + scores
+
+const problemStore = new Map();
+// Structure: id -> { id, text, cat, votes, replies, createdAt, score }
+
+// ── POST a new problem ───────────────────────
+app.post('/api/problems', async (req, res) => {
+  const { text, category } = req.body;
+
+  if (!text || typeof text !== 'string' || text.trim().length < 10) {
+    return res.status(400).json({ error: 'Problem too short' });
+  }
+
+  const clean = text.substring(0, 500).replace(/[<>]/g, '').trim();
+  const cat = (category || 'General').substring(0, 30);
+  const id = Date.now().toString();
+
+  const problem = {
+    id,
+    text: clean,
+    cat,
+    votes: 0,
+    replies: 0,
+    createdAt: Date.now(),
+    score: 0
+  };
+
+  problemStore.set(id, problem);
+  res.json({ id });
+});
+
+// ── GET trending problems ────────────────────
+app.get('/api/problems/trending', (req, res) => {
+  const now = Date.now();
+  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+
+  const trending = [];
+
+  for (const [id, p] of problemStore.entries()) {
+    // Auto-expire after 30 days
+    if (now - p.createdAt > thirtyDays) {
+      problemStore.delete(id);
+      continue;
+    }
+
+    const ageMinutes = (now - p.createdAt) / 60000;
+    const score = calculateTrendScore(p.votes, p.replies, ageMinutes);
+
+    trending.push({ ...p, score });
+  }
+
+  // Sort by trending score — highest first
+  trending.sort((a, b) => b.score - a.score);
+
+  // Return top 20
+  res.json({ problems: trending.slice(0, 20) });
+});
+
+// ── Vote on a problem ────────────────────────
+app.post('/api/problems/:id/vote', (req, res) => {
+  const problem = problemStore.get(req.params.id);
+  if (!problem) return res.status(404).json({ error: 'Not found' });
+
+  problem.votes = Math.max(0, problem.votes + 1);
+  res.json({ votes: problem.votes });
+});
+
+// ── Add a reply count to problem ─────────────
+app.post('/api/problems/:id/reply', (req, res) => {
+  const problem = problemStore.get(req.params.id);
+  if (!problem) return res.status(404).json({ error: 'Not found' });
+
+  problem.replies += 1;
+  res.json({ replies: problem.replies });
+});
+
+// ── Auto-cleanup: runs every hour ────────────
+setInterval(() => {
+  const now = Date.now();
+  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+  let cleaned = 0;
+
+  for (const [id, p] of problemStore.entries()) {
+    if (now - p.createdAt > thirtyDays) {
+      problemStore.delete(id);
+      cleaned++;
+    }
+  }
+
+  if (cleaned > 0) {
+    console.log(`[VEILX] Auto-cleaned ${cleaned} expired problems`);
+  }
+}, 60 * 60 * 1000);
+// ── Phase 2: AI Response Route ──────────────
+// POST /api/ai-response
+// Body: { problem: "...", category: "..." }
+// Returns: { response: "..." }
+
+app.post('/api/ai-response', async (req, res) => {
+  const { problem, category } = req.body;
+
+  // Validate inputs
+  if (!problem || typeof problem !== 'string') {
+    return res.status(400).json({ error: 'Problem text required' });
+  }
+
+  const cleanProblem = problem.substring(0, 500).replace(/[<>]/g, '');
+  const cleanCategory = (category || 'General').substring(0, 30);
+
+  try {
+    const response = await getAIResponse(cleanProblem, cleanCategory);
+    res.json({ response });
+  } catch (err) {
+    res.status(500).json({ error: 'Could not generate response' });
+  }
 });
 
 // Create a room
@@ -202,17 +409,25 @@ io.on('connection', (socket) => {
   // Send a message
   socket.on('send_message', ({ text }) => {
     if (!currentRoom || !userCodename) return;
-
-    // Validate message
+    if (!checkMsgRate(socket.id)) {
+      socket.emit('error', { message: 'Too many messages.' });
+      return;
+    }
     if (!text || typeof text !== 'string') return;
-    const clean = text.trim().substring(0, 2000); // Max 2000 chars
+    const clean = sanitize(text, 2000);
     if (!clean) return;
-
     const room = rooms.get(currentRoom);
     if (!room) return;
-
     room.lastActivity = Date.now();
     room.msgCount++;
+    const payload = signMessage({
+      sender: userCodename,
+      avatar: userEmoji,
+      text: clean,
+      time: new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }),
+    });
+    io.to(currentRoom).emit('message', payload);
+  });
 
     // NOTE: Message is NOT stored anywhere — broadcast only
     // Even server RAM doesn't keep it after broadcast
@@ -230,6 +445,7 @@ io.on('connection', (socket) => {
 
   // Handle disconnect
   socket.on('disconnect', () => {
+    cleanupSocket(socket.id);
     if (currentRoom) {
       const room = rooms.get(currentRoom);
       if (room) {
@@ -250,7 +466,6 @@ io.on('connection', (socket) => {
     }
     // user identity is gone — socket.id was the only link
   });
-});
 
 // ── Static Files ─────────────────────────────
 app.use(express.static(path.join(__dirname, '../frontend')));

@@ -923,11 +923,161 @@ body::before {
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
 /* RESPONSIVE */
+/* ════════════════════════════════════════════
+   VEILX Phase 2 Step 4 — Mobile Polish
+   Replace your existing @media (max-width: 700px) block with this
+════════════════════════════════════════════ */
+
+/* ── Tablet (max 900px) ── */
+@media (max-width: 900px) {
+  .sidebar { width: 220px; }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+  .money-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ── Mobile (max 700px) ── */
 @media (max-width: 700px) {
+
+  /* Hide sidebar — replaced by bottom nav */
   .sidebar { display: none; }
-  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+
+  /* Stack all grids to single column */
+  .grid-2,
+  .grid-3 { grid-template-columns: 1fr; }
+
+  /* Code editor stacks vertically */
   .editor-area { grid-template-columns: 1fr; }
-  .code-pane { border-right: none; border-bottom: 1px solid var(--border); }
+  .code-pane {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Shrink topbar */
+  .topbar { padding: 0.75rem 1rem; }
+  .topbar-title { font-size: 0.95rem; }
+  .icon-btn { font-size: 0.7rem; padding: 0.4rem 0.6rem; }
+
+  /* Content padding reduced */
+  .content-area { padding: 1rem; }
+
+  /* Welcome banner smaller */
+  .welcome-banner { padding: 1.25rem; }
+  .welcome-title { font-size: 1.1rem; }
+  .welcome-banner::before { font-size: 3rem; }
+
+  /* Zone cards more compact */
+  .zone-card { padding: 1rem; }
+  .zone-icon { font-size: 1.4rem; margin-bottom: 0.5rem; }
+  .zone-name { font-size: 0.85rem; }
+  .zone-desc { font-size: 0.7rem; }
+
+  /* Chat room full screen on mobile */
+  .chat-header { padding: 0.65rem 1rem; }
+  .messages { padding: 1rem; }
+  .chat-input-area { padding: 0.75rem 1rem; }
+  .message { max-width: 92%; }
+
+  /* Room type grid — 3 columns on mobile */
+  .room-type-grid { grid-template-columns: repeat(3, 1fr); }
+  .room-type-card { padding: 0.75rem 0.5rem; }
+  .room-type-card .rt-icon { font-size: 1.2rem; }
+  .room-type-card .rt-name { font-size: 0.65rem; }
+
+  /* Rooms header stacks */
+  .rooms-header { flex-direction: column; }
+  .rooms-header .room-input { width: 100%; }
+  .rooms-header .btn-sm { width: 100%; }
+
+  /* Problems — post box compact */
+  .post-box { padding: 1rem; }
+  .post-textarea { height: 70px; font-size: 0.82rem; }
+  .category-chips { gap: 0.35rem; }
+  .chip { font-size: 0.62rem; padding: 0.25rem 0.6rem; }
+
+  /* Problem cards */
+  .problem-card { padding: 1rem; }
+  .problem-text { font-size: 0.82rem; }
+  .vote-btn { font-size: 0.65rem; padding: 0.25rem 0.6rem; }
+
+  /* Code editor full width */
+  .code-textarea { font-size: 0.72rem; min-height: 220px; }
+  .preview-pane iframe { min-height: 220px; }
+
+  /* Landing screen */
+  .identity-card { padding: 1.25rem; margin: 1rem auto; }
+  .recovery-key { font-size: 0.75rem; letter-spacing: 1px; }
+
+  /* Modal full width */
+  .modal { padding: 1.25rem; }
+
+  /* Toast lower on mobile */
+  .toast { bottom: 5.5rem; font-size: 0.7rem; }
+}
+
+/* ── Bottom Navigation Bar (mobile only) ── */
+@media (max-width: 700px) {
+  /* Push content up so bottom nav doesn't overlap */
+  #app .main {
+    padding-bottom: 64px;
+  }
+
+  .bottom-nav {
+    display: flex;
+  }
+}
+
+/* Bottom nav hidden on desktop */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  z-index: 100;
+  align-items: stretch;
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.55rem;
+  font-family: var(--display);
+  font-weight: 600;
+  gap: 3px;
+  transition: color 0.15s;
+  border: none;
+  background: transparent;
+  letter-spacing: 0.5px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav-item:active {
+  background: var(--surface2);
+}
+
+.bottom-nav-item.active {
+  color: var(--accent);
+}
+
+.bottom-nav-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+/* ── Small screen text fixes ── */
+@media (max-width: 400px) {
+  .logo { font-size: 3.5rem; letter-spacing: -2px; }
+  .tagline { font-size: 0.55rem; letter-spacing: 1px; }
+  .codename { font-size: 0.9rem; }
+  .recovery-key { font-size: 0.65rem; }
 }
 </style>
 </head>
@@ -1243,7 +1393,35 @@ body::before {
     </div><!-- end content-area -->
   </div><!-- end main -->
 </div><!-- end app -->
+<!-- ═══════════════════ BOTTOM NAV (mobile only) ═══════════════════ -->
+<div class="bottom-nav" id="bottom-nav">
 
+  <button class="bottom-nav-item active" onclick="mobileNav('home', this)">
+    <span class="bottom-nav-icon">🏠</span>
+    Home
+  </button>
+
+  <button class="bottom-nav-item" onclick="mobileNav('rooms', this)">
+    <span class="bottom-nav-icon">🚪</span>
+    Rooms
+  </button>
+
+  <button class="bottom-nav-item" onclick="mobileNav('problems', this)">
+    <span class="bottom-nav-icon">🆘</span>
+    Ask
+  </button>
+
+  <button class="bottom-nav-item" onclick="mobileNav('code', this)">
+    <span class="bottom-nav-icon">💻</span>
+    Code
+  </button>
+
+  <button class="bottom-nav-item" onclick="mobileNav('games', this)">
+    <span class="bottom-nav-icon">🎮</span>
+    Games
+  </button>
+
+</div>
 <!-- ═══════════════════ MODALS ═══════════════════ -->
 <div class="modal-overlay" id="key-modal">
   <div class="modal">
@@ -1255,6 +1433,77 @@ body::before {
     <button class="btn btn-primary" onclick="downloadKey(); closeModal('key-modal')">💾 Download Key File</button>
     <button class="btn btn-secondary" onclick="copyKey()">📋 Copy to Clipboard</button>
     <button class="btn btn-secondary" onclick="closeModal('key-modal')">Close</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ REPORT MODAL ═══════════════════ -->
+<div class="modal-overlay" id="report-modal">
+  <div class="modal">
+
+    <div class="modal-title">⚑ Report Content</div>
+    <div class="modal-sub">
+      Reports are completely anonymous. Content reported
+      3 or more times is automatically hidden. We never
+      know who filed the report.
+    </div>
+
+    <!-- Hidden fields -->
+    <input type="hidden" id="report-type"/>
+    <input type="hidden" id="report-content-id"/>
+
+    <!-- Reason selector -->
+    <div style="
+      font-family:var(--mono);
+      font-size:0.6rem;
+      color:var(--muted);
+      letter-spacing:2px;
+      margin-bottom:0.6rem
+    ">SELECT REASON</div>
+
+    <div id="report-reasons" style="
+      display:flex;
+      flex-direction:column;
+      gap:0.4rem;
+      margin-bottom:1.25rem
+    ">
+      <label class="report-reason-item">
+        <input type="radio" name="report-reason" value="harassment"/>
+        <span>😡 Harassment or bullying</span>
+      </label>
+      <label class="report-reason-item">
+        <input type="radio" name="report-reason" value="spam"/>
+        <span>🗑 Spam or irrelevant</span>
+      </label>
+      <label class="report-reason-item">
+        <input type="radio" name="report-reason" value="hate_speech"/>
+        <span>🚫 Hate speech</span>
+      </label>
+      <label class="report-reason-item">
+        <input type="radio" name="report-reason" value="self_harm"/>
+        <span>💙 Self harm concern</span>
+      </label>
+      <label class="report-reason-item">
+        <input type="radio" name="report-reason" value="illegal"/>
+        <span>⚖️ Illegal content</span>
+      </label>
+      <label class="report-reason-item">
+        <input type="radio" name="report-reason" value="misinformation"/>
+        <span>❌ Misinformation</span>
+      </label>
+      <label class="report-reason-item">
+        <input type="radio" name="report-reason" value="other"/>
+        <span>📝 Other</span>
+      </label>
+    </div>
+
+    <button class="btn btn-primary" onclick="submitReport()"
+      style="background:linear-gradient(135deg,#ff4f7b,#cc3060)">
+      Submit Anonymous Report
+    </button>
+    <button class="btn btn-secondary" onclick="closeModal('report-modal')">
+      Cancel
+    </button>
+
   </div>
 </div>
 
@@ -1461,6 +1710,14 @@ function renderMessages() {
       <div class="msg-body">
         <div class="msg-meta"><span class="msg-name">${m.sender}</span><span>${m.time}</span></div>
         <div class="msg-bubble">${escHtml(m.text)}</div>
+${m.sender !== identity.codename ?
+  `<div style="text-align:right;margin-top:3px">
+    <button onclick="openReport('message','${m.sender}')"
+      style="background:transparent;border:none;cursor:pointer;
+      font-size:0.6rem;color:var(--muted);font-family:var(--mono)">
+      ⚑ report
+    </button>
+  </div>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -1526,10 +1783,17 @@ function selectCat(el, cat) {
   el.classList.add('selected');
 }
 
-function postProblem() {
-  const text = document.getElementById('problem-input').value.trim();
-  if (text.length < 10) { showToast('Please describe your problem in more detail', 'error'); return; }
+// ── Phase 2: postProblem with AI first response ──
+// Replace the entire postProblem() function with this
 
+async function postProblem() {
+  const text = document.getElementById('problem-input').value.trim();
+  if (text.length < 10) {
+    showToast('Please describe your problem in more detail', 'error');
+    return;
+  }
+
+  // Create the problem card immediately
   const p = {
     id: Date.now(),
     text,
@@ -1539,13 +1803,45 @@ function postProblem() {
     time: 'Just now',
     votes: 0,
     replies: 0,
-    voted: false
+    voted: false,
+    aiResponse: null,      // Will fill in below
+    aiLoading: true        // Show loading state
   };
+
   problems.unshift(p);
   saveProblems();
   renderProblems();
   document.getElementById('problem-input').value = '';
-  showToast('Posted anonymously ✓', 'success');
+  showToast('Posted anonymously ✓ Getting AI response...', 'success');
+
+  // Fetch AI response in background
+  try {
+    const res = await fetch('/api/ai-response', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ problem: text, category: selectedCat })
+    });
+
+    const data = await res.json();
+
+    // Find the problem and add the AI response
+    const found = problems.find(x => x.id === p.id);
+    if (found) {
+      found.aiResponse = data.response;
+      found.aiLoading = false;
+      saveProblems();
+      renderProblems();
+      showToast('AI response ready 🤖', 'success');
+    }
+  } catch (err) {
+    const found = problems.find(x => x.id === p.id);
+    if (found) {
+      found.aiLoading = false;
+      found.aiResponse = "Community will respond soon. You're not alone. 💙";
+      saveProblems();
+      renderProblems();
+    }
+  }
 }
 
 function vote(id) {
@@ -1561,10 +1857,45 @@ function saveProblems() {
   localStorage.setItem('veilx_problems', JSON.stringify(problems));
 }
 
-function loadProblems() {
-  const s = localStorage.getItem('veilx_problems');
-  if (s) { try { problems = JSON.parse(s); } catch(e) {} }
+// ── Phase 2 Step 3: Trending Problems ────────
+// Replace the entire loadProblems() function with this
 
+async function loadProblems() {
+  // First load from localStorage (instant, works offline)
+  const s = localStorage.getItem('veilx_problems');
+  if (s) {
+    try { problems = JSON.parse(s); } catch(e) {}
+  }
+
+  // Then try to fetch trending from server (live data)
+  try {
+    const res = await fetch('/api/problems/trending');
+    if (res.ok) {
+      const data = await res.json();
+
+      if (data.problems && data.problems.length > 0) {
+        // Merge server problems with local ones
+        // Server problems get a 'fromServer' flag
+        const serverProblems = data.problems.map(p => ({
+          ...p,
+          sender: '🌐 Community',
+          avatar: getAvatarForCat(p.cat),
+          time: timeAgo(p.createdAt),
+          voted: false,
+          fromServer: true
+        }));
+
+        // Combine: local first, then server trending
+        const localOnly = problems.filter(p => !p.fromServer);
+        problems = [...localOnly, ...serverProblems];
+        saveProblems();
+      }
+    }
+  } catch(e) {
+    // Server not reachable — use localStorage only, that's fine
+  }
+
+  // If still empty, load sample problems
   if (problems.length === 0) {
     problems = [
       { id:1, text:'I feel anxious before every exam even when I have prepared well. How do I control this?', cat:'Mental Health', sender:'GhostFox#1192', avatar:'🐺', time:'2h ago', votes:24, replies:8, voted:false },
@@ -1574,29 +1905,164 @@ function loadProblems() {
   }
 }
 
+// ── Also update vote() to sync with server ───
+// Replace your existing vote() function with this
+
+async function vote(id) {
+  const p = problems.find(x => x.id == id);
+  if (!p) return;
+  p.voted = !p.voted;
+  p.votes += p.voted ? 1 : -1;
+  saveProblems();
+  renderProblems();
+
+  // Sync vote to server if it's a server problem
+  if (p.fromServer) {
+    try {
+      await fetch(`/api/problems/${id}/vote`, { method: 'POST' });
+    } catch(e) {
+      // Offline — local vote saved, will sync later
+    }
+  }
+}
+
+// ── Add trending section header to renderProblems ──
+// Find your renderProblems() function
+// Add this line at the very TOP inside the function,
+// before the container.innerHTML line:
+
+function getTrendingHeader() {
+  const topProblem = problems.reduce((best, p) =>
+    (p.votes + p.replies * 2) > ((best?.votes || 0) + (best?.replies || 0) * 2) ? p : best
+  , null);
+
+  if (!topProblem) return '';
+
+  return `
+    <div style="
+      display:flex;
+      align-items:center;
+      gap:0.5rem;
+      margin-bottom:1rem;
+      font-family:var(--mono);
+      font-size:0.6rem;
+      color:var(--muted);
+      letter-spacing:2px;
+    ">
+      <span style="color:#ff6b35">🔥</span>
+      TRENDING NOW
+      <span style="
+        background:rgba(255,107,53,0.15);
+        color:#ff6b35;
+        padding:2px 8px;
+        border-radius:20px;
+        font-size:0.6rem;
+      ">${topProblem.cat}</span>
+    </div>
+  `;
+}
+
+// ── Helper: get avatar emoji by category ─────
+function getAvatarForCat(cat) {
+  const map = {
+    'Mental Health': '💙',
+    'Finance': '💰',
+    'Tech': '💻',
+    'Career': '🚀',
+    'Relationships': '❤️',
+    'Studies': '📚',
+    'General': '💬'
+  };
+  return map[cat] || '💬';
+}
+
+// ── Helper: human-readable time ago ──────────
+function timeAgo(timestamp) {
+  const mins = Math.floor((Date.now() - timestamp) / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+  if (problems.length === 0) {
+    problems = [
+      { id:1, text:'I feel anxious before every exam even when I have prepared well. How do I control this?', cat:'Mental Health', sender:'GhostFox#1192', avatar:'🐺', time:'2h ago', votes:24, replies:8, voted:false },
+      { id:2, text:'My landlord is refusing to return my deposit without any valid reason. What can I do legally?', cat:'Finance', sender:'SilentHawk#4421', avatar:'🦅', time:'5h ago', votes:17, replies:5, voted:false },
+      { id:3, text:'Best way to learn coding from scratch in 2025 with no CS background?', cat:'Tech', sender:'NeonWolf#8833', avatar:'🐯', time:'1d ago', votes:41, replies:19, voted:false },
+    ];
+  }
+
+
+/// ── FIXED renderProblems() — no nested backtick errors ──
+// Replace your ENTIRE renderProblems() function with this
+
 function renderProblems() {
   const container = document.getElementById('problems-list');
   if (!container) return;
-  container.innerHTML = problems.map(p => `
-    <div class="problem-card">
-      <div class="problem-meta">
-        <div class="problem-avatar">${p.avatar}</div>
-        <div>
-          <div class="problem-user">${p.sender}</div>
-          <div class="problem-time">${p.time}</div>
-        </div>
-        <div class="cat-tag">${p.cat}</div>
-      </div>
-      <div class="problem-text">${escHtml(p.text)}</div>
-      <div class="problem-actions">
-        <button class="vote-btn ${p.voted?'voted':''}" onclick="vote(${p.id})">▲ ${p.votes}</button>
-        <button class="vote-btn" onclick="replyToProblem(${p.id})">💬 Reply</button>
-        <div class="reply-count">${p.replies} replies</div>
-      </div>
-    </div>
-  `).join('');
+ 
+  const header = getTrendingHeader();
+ 
+  container.innerHTML = header + problems.map(function(p) {
+ 
+    // Build AI section as a plain string — no nested backticks
+    var aiSection = '';
+ 
+    if (p.aiLoading) {
+      aiSection =
+        '<div style="margin-top:0.75rem;padding:0.75rem 1rem;' +
+        'background:rgba(123,111,255,0.07);border:1px solid rgba(123,111,255,0.2);' +
+        'border-radius:8px;font-family:var(--mono);font-size:0.7rem;' +
+        'color:var(--muted);display:flex;align-items:center;gap:0.5rem;">' +
+        '<span style="animation:pulse 1s infinite">⏳</span> AI is generating a response...' +
+        '</div>';
+    }
+ 
+    if (p.aiResponse && !p.aiLoading) {
+      aiSection =
+        '<div style="margin-top:0.75rem;padding:0.9rem 1rem;' +
+        'background:rgba(123,111,255,0.07);border:1px solid rgba(123,111,255,0.2);' +
+        'border-left:3px solid var(--accent);border-radius:8px;">' +
+        '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--accent);' +
+        'letter-spacing:1px;margin-bottom:0.4rem;display:flex;align-items:center;gap:0.4rem;">' +
+        '🤖 AI FIRST RESPONSE</div>' +
+        '<div style="font-size:0.82rem;line-height:1.7;color:var(--text)">' +
+        escHtml(p.aiResponse) +
+        '</div></div>';
+    }
+ 
+    // Build vote button
+    var votedClass = p.voted ? 'voted' : '';
+ 
+    return (
+      '<div class="problem-card">' +
+ 
+        '<div class="problem-meta">' +
+          '<div class="problem-avatar">' + p.avatar + '</div>' +
+          '<div>' +
+            '<div class="problem-user">' + p.sender + '</div>' +
+            '<div class="problem-time">' + p.time + '</div>' +
+          '</div>' +
+          '<div class="cat-tag">' + p.cat + '</div>' +
+        '</div>' +
+ 
+        '<div class="problem-text">' + escHtml(p.text) + '</div>' +
+ 
+        '<div class="problem-actions">' +
+       '<button class="vote-btn ' + votedClass + '" onclick="vote(' + p.id + ')">▲ ' + p.votes + '</button>' +
+      '<button class="vote-btn" onclick="replyToProblem(' + p.id + ')">💬 Reply</button>' +
+      '<div class="reply-count">' + p.replies + ' replies</div>' +
+      '<button class="vote-btn" style="margin-left:auto;color:var(--muted)" onclick="openReport(\'problem\',\'' + p.id + '\')">⚑ Report</button>' +
+    '</div>' +
+ 
+        aiSection +
+ 
+      '</div>'
+    );
+ 
+  }).join('');
 }
-
 function replyToProblem(id) {
   const p = problems.find(x => x.id === id);
   if (!p) return;
@@ -1668,7 +2134,76 @@ function runCode() {
   const frame = document.getElementById('code-preview');
   let html = code;
   if (lang === 'js') html = `<script>${code}<\/script>`;
-  if (lang === 'css') html = `<style>${code}</style><div class="box"></div>`;
+  if (lang === 'css') html = `<style>${code}<!-- ═══════════════════ REPORT MODAL ═══════════════════ -->
+<div class="modal-overlay" id="report-modal">
+  <div class="modal">
+
+    <div class="modal-title">⚑ Report Content</div>
+    <div class="modal-sub">
+      Reports are completely anonymous. Content reported
+      3 or more times is automatically hidden. We never
+      know who filed the report.
+    </div>
+
+    <!-- Hidden fields -->
+    <input type="hidden" id="report-type"/>
+    <input type="hidden" id="report-content-id"/>
+
+    <!-- Reason selector -->
+    <div style="
+      font-family:var(--mono);
+      font-size:0.6rem;
+      color:var(--muted);
+      letter-spacing:2px;
+      margin-bottom:0.6rem
+    ">SELECT REASON</div>
+
+    <div id="report-reasons" style="
+      display:flex;
+      flex-direction:column;
+      gap:0.4rem;
+      margin-bottom:1.25rem
+    ">
+      <label class="report-reason-item">
+        <input type="radio" name="report-reason" value="harassment"/>
+        <span>😡 Harassment or bullying</span>
+      </label>
+      <label class="report-reason-item">
+        <input type="radio" name="report-reason" value="spam"/>
+        <span>🗑 Spam or irrelevant</span>
+      </label>
+      <label class="report-reason-item">
+        <input type="radio" name="report-reason" value="hate_speech"/>
+        <span>🚫 Hate speech</span>
+      </label>
+      <label class="report-reason-item">
+        <input type="radio" name="report-reason" value="self_harm"/>
+        <span>💙 Self harm concern</span>
+      </label>
+      <label class="report-reason-item">
+        <input type="radio" name="report-reason" value="illegal"/>
+        <span>⚖️ Illegal content</span>
+      </label>
+      <label class="report-reason-item">
+        <input type="radio" name="report-reason" value="misinformation"/>
+        <span>❌ Misinformation</span>
+      </label>
+      <label class="report-reason-item">
+        <input type="radio" name="report-reason" value="other"/>
+        <span>📝 Other</span>
+      </label>
+    </div>
+
+    <button class="btn btn-primary" onclick="submitReport()"
+      style="background:linear-gradient(135deg,#ff4f7b,#cc3060)">
+      Submit Anonymous Report
+    </button>
+    <button class="btn btn-secondary" onclick="closeModal('report-modal')">
+      Cancel
+    </button>
+
+  </div>
+</div></style><div class="box"></div>`;
   frame.srcdoc = html;
   showToast('Running... ▶', 'success');
 }
@@ -1824,6 +2359,289 @@ function showToast(msg, type='') {
 
 function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+// ── Phase 2 Encryption ──
+let roomEncryptionKey = null;
+
+async function deriveRoomKey(token, roomCode) {
+  const raw = new TextEncoder().encode(token + roomCode);
+  const keyMaterial = await crypto.subtle.importKey('raw', raw, { name: 'PBKDF2' }, false, ['deriveKey']);
+  roomEncryptionKey = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: new TextEncoder().encode('veilx-salt-v1'), iterations: 100000, hash: 'SHA-256' },
+    keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptMessage(text) {
+  if (!roomEncryptionKey) return text;
+  try {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, roomEncryptionKey, new TextEncoder().encode(text));
+    const combined = new Uint8Array(iv.byteLength + encrypted.byteLength);
+    combined.set(iv, 0);
+    combined.set(new Uint8Array(encrypted), iv.byteLength);
+    return btoa(String.fromCharCode(...combined));
+  } catch(e) { return text; }
+}
+
+async function decryptMessage(ciphertext) {
+  if (!roomEncryptionKey) return ciphertext;
+  try {
+    const combined = Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0));
+    const decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: combined.slice(0,12) }, roomEncryptionKey, combined.slice(12));
+    return new TextDecoder().decode(decrypted);
+  } catch(e) { return ciphertext; }
+}
+// ════════════════════════════════════════════
+// VEILX Phase 2 Step 4 — Mobile Navigation JS
+// Paste this just above the closing tag
+// ════════════════════════════════════════════
+
+// ── Bottom nav handler ───────────────────────
+function mobileNav(panel, el) {
+  // Update bottom nav active state
+  document.querySelectorAll('.bottom-nav-item')
+    .forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+
+  // Also update sidebar nav
+  const sidebarItems = document.querySelectorAll('.nav-item');
+  sidebarItems.forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes(panel)) {
+      switchPanel(panel, n);
+    }
+  });
+
+  // If no sidebar item matched, just switch panel directly
+  switchPanel(panel, null);
+}
+
+// ── Sync bottom nav with sidebar nav ─────────
+// Override switchPanel to keep both navs in sync
+const _originalSwitchPanel = switchPanel;
+window.switchPanel = function(name, navEl) {
+  _originalSwitchPanel(name, navEl);
+
+  // Sync bottom nav highlight
+  document.querySelectorAll('.bottom-nav-item').forEach(btn => {
+    const click = btn.getAttribute('onclick') || '';
+    if (click.includes("'" + name + "'")) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+};
+
+// ── Hide bottom nav when in chat room ────────
+const _originalOpenRoom = openChatRoom;
+window.openChatRoom = function(code, type, isNew) {
+  _originalOpenRoom(code, type, isNew);
+  document.getElementById('bottom-nav').style.display = 'none';
+};
+
+const _originalLeaveRoom = leaveRoom;
+window.leaveRoom = function() {
+  _originalLeaveRoom();
+  // Only show bottom nav on mobile
+  if (window.innerWidth <= 700) {
+    document.getElementById('bottom-nav').style.display = 'flex';
+  }
+};
+
+// ── Fix viewport height on mobile browsers ───
+// iOS Safari has the notorious 100vh bug
+function fixMobileHeight() {
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--vh', vh + 'px');
+}
+fixMobileHeight();
+window.addEventListener('resize', fixMobileHeight);
+
+// ── Prevent double-tap zoom on buttons ───────
+document.addEventListener('touchend', function(e) {
+  if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+    e.preventDefault();
+    e.target.click();
+  }
+}, { passive: false });
+
+// ── Auto-close keyboard when sending message ──
+document.addEventListener('DOMContentLoaded', function() {
+  const chatInput = document.getElementById('chat-input');
+  if (chatInput) {
+    chatInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+        // Blur to close keyboard on mobile
+        if (window.innerWidth <= 700) {
+          setTimeout(() => chatInput.blur(), 100);
+        }
+      }
+    });
+  }
+});
+// ════════════════════════════════════════════
+// VEILX Phase 2 Step 5 — Report System JS
+// Paste above the closing tag
+// ════════════════════════════════════════════
+
+// ── Open report modal ────────────────────────
+function openReport(type, contentId) {
+  document.getElementById('report-type').value = type;
+  document.getElementById('report-content-id').value = contentId;
+
+  // Clear previous selection
+  document.querySelectorAll('input[name="report-reason"]')
+    .forEach(r => r.checked = false);
+
+  document.getElementById('report-modal').classList.add('open');
+}
+
+// ── Submit the report ────────────────────────
+async function submitReport() {
+  const type = document.getElementById('report-type').value;
+  const contentId = document.getElementById('report-content-id').value;
+  const reasonEl = document.querySelector('input[name="report-reason"]:checked');
+
+  // Validate reason selected
+  if (!reasonEl) {
+    showToast('Please select a reason', 'error');
+    return;
+  }
+
+  const reason = reasonEl.value;
+
+  try {
+    const res = await fetch('/api/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, contentId, reason })
+    });
+
+    const data = await res.json();
+
+    closeModal('report-modal');
+
+    if (data.autoHidden) {
+      showToast('Content removed — too many reports ✓', 'success');
+
+      // Hide the reported problem from local view
+      if (type === 'problem') {
+        problems = problems.filter(p => p.id != contentId);
+        saveProblems();
+        renderProblems();
+      }
+    } else {
+      showToast('Report submitted anonymously ✓', 'success');
+    }
+
+  } catch(err) {
+    // If server unreachable — still give feedback
+    closeModal('report-modal');
+    showToast('Report noted locally ✓', 'success');
+  }
+}
+
+// ── Self-harm detection ──────────────────────
+// If a message or problem contains concerning keywords
+// show a gentle support message automatically
+
+const CONCERN_KEYWORDS = [
+  'kill myself', 'end my life', 'suicide', 'want to die',
+  'hurt myself', 'self harm', 'no reason to live',
+  'cant go on', "can't go on", 'give up on life'
+];
+
+function checkForConcerningContent(text) {
+  const lower = text.toLowerCase();
+  return CONCERN_KEYWORDS.some(k => lower.includes(k));
+}
+
+function showSupportMessage() {
+  const existing = document.getElementById('support-banner');
+  if (existing) return; // Don't show twice
+
+  const banner = document.createElement('div');
+  banner.id = 'support-banner';
+  banner.style.cssText = `
+    position: fixed;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface);
+    border: 1px solid rgba(79,255,176,0.3);
+    border-left: 3px solid var(--success);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    max-width: 360px;
+    width: 90%;
+    z-index: 200;
+    animation: fadeUp 0.3s ease;
+    font-size: 0.82rem;
+    line-height: 1.6;
+  `;
+  banner.innerHTML = `
+    <div style="font-family:var(--mono);font-size:0.6rem;color:var(--success);
+      letter-spacing:1px;margin-bottom:0.4rem">💙 YOU MATTER</div>
+    <div style="color:var(--text);margin-bottom:0.75rem">
+      If you're going through something difficult,
+      please reach out. You are not alone.
+    </div>
+    <div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);
+      margin-bottom:0.75rem">
+      iCall India: <span style="color:var(--success)">9152987821</span><br/>
+      Vandrevala Foundation: <span style="color:var(--success)">1860-2662-345</span>
+    </div>
+    <button onclick="document.getElementById('support-banner').remove()"
+      style="background:transparent;border:1px solid var(--border);border-radius:6px;
+      color:var(--muted);font-family:var(--mono);font-size:0.65px;padding:0.3rem 0.75rem;
+      cursor:pointer;font-size:0.65rem">
+      Close
+    </button>
+  `;
+  document.body.appendChild(banner);
+
+  // Auto-remove after 15 seconds
+  setTimeout(() => {
+    if (document.getElementById('support-banner')) {
+      document.getElementById('support-banner').remove();
+    }
+  }, 15000);
+}
+
+// ── Hook into postProblem to check content ───
+const _postProblemOriginal = postProblem;
+window.postProblem = async function() {
+  const text = document.getElementById('problem-input').value.trim();
+  if (checkForConcerningContent(text)) {
+    showSupportMessage();
+  }
+  await _postProblemOriginal();
+};
+
+// ── Hook into sendMessage to check content ───
+const _sendMessageOriginal = sendMessage;
+window.sendMessage = async function() {
+  const text = document.getElementById('chat-input').value.trim();
+  if (checkForConcerningContent(text)) {
+    showSupportMessage();
+  }
+  await _sendMessageOriginal();
+};
+
+// ── Listen for auto-hidden content from server
+if (window._socket) {
+  window._socket.on('content_hidden', function(data) {
+    // Remove from problems if present
+    problems = problems.filter(p => p.id != data.contentId);
+    saveProblems();
+    renderProblems();
+    // Remove from messages if in chat
+    messages = messages.filter(m => m.sender !== data.contentId);
+    renderMessages();
+  });
 }
 </script>
 </body>
