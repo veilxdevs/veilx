@@ -502,4 +502,6 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`🛡  Rate limiting: ON`);
   console.log(`\n→ Listening on 0.0.0.0:${PORT}\n`);
 });
-
+console.log('Starting VEILX...');
+console.log('PORT:', process.env.PORT);
+console.log('NODE_ENV:', process.env.NODE_ENV);
