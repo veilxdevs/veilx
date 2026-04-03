@@ -481,15 +481,19 @@ server.listen(PORT, () => {
   console.log(`📡 Zero-knowledge mode: ON`);
 });
 
-// ── Keep-alive ping (stops Render free tier sleeping) ──
-const RENDER_URL = process.env.RENDER_URL || '';
-if (RENDER_URL) {
-  setInterval(async () => {
-    try {
-      await fetch(RENDER_URL + '/api/health');
-      console.log('[VEILX] Keep-alive ping sent');
-    } catch(e) {
-      // Silent fail — not critical
-    }
-  }, 14 * 60 * 1000); // Ping every 14 minutes
-}
+// Static files
+app.use(express.static(path.join(__dirname, '../frontend')));
+
+// Catch-all
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
+
+// Start server
+server.listen(PORT, () => {
+  console.log(`\n🔒 VEILX Server running on port ${PORT}`);
+  console.log(`📡 Zero-knowledge mode: ON`);
+  console.log(`🗑  Auto-delete: ON`);
+  console.log(`🛡  Rate limiting: ON`);
+});
+
