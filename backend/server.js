@@ -1,9 +1,3 @@
-// ════════════════════════════════════════════
-// VEILX — Complete Server (backend/server.js)
-// ALL code in ONE file — no external requires
-// Phase 1 + Phase 2 fully included
-// ════════════════════════════════════════════
-
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
