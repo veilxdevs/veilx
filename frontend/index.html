@@ -1107,7 +1107,7 @@ body::before {
       <div class="recovery-warn">⚠ We never store this. Lost key = new identity only.</div>
     </div>
 
-    <button class="btn btn-primary" onclick="downloadKey()">💾 Save Key & Enter VEILX</button>
+   <button class="btn btn-primary" onclick="enterApp()">⚡ Enter VEILX</button>
     <button class="btn btn-secondary" onclick="toggleRestore()">🔄 Restore with existing key</button>
     <button class="btn btn-secondary" onclick="enterApp()">⚡ Skip & Enter VEILX</button> 
 
@@ -1592,12 +1592,33 @@ function restoreIdentity() {
 }
 
 function enterApp() {
-  document.getElementById('landing').classList.remove('active');
-  document.getElementById('app').classList.add('active');
-  saveIdentity(identity);
-  updateUI();
-  renderProblems();
-  loadCode();
+  // Generate identity if not done yet
+  if (!identity) {
+    const key = generateKey();
+    identity = generateIdentityFromKey(key);
+  }
+
+  // Save to localStorage
+  try { saveIdentity(identity); } catch(e) {}
+
+  // Switch screens
+  const landing = document.getElementById('landing');
+  const app = document.getElementById('app');
+
+  if (!landing || !app) {
+    alert('Page error — please refresh');
+    return;
+  }
+
+  landing.classList.remove('active');
+  landing.style.display = 'none';
+  app.classList.add('active');
+  app.style.display = 'flex';
+
+  // Update UI
+  try { updateUI(); } catch(e) {}
+  try { renderProblems(); } catch(e) {}
+  try { loadCode(); } catch(e) {}
 }
 
 function updateUI() {
