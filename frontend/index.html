@@ -1109,6 +1109,7 @@ body::before {
 
     <button class="btn btn-primary" onclick="downloadKey()">💾 Save Key & Enter VEILX</button>
     <button class="btn btn-secondary" onclick="toggleRestore()">🔄 Restore with existing key</button>
+    <button class="btn btn-secondary" onclick="enterApp()">⚡ Skip & Enter VEILX</button> 
 
     <div id="restore-section" style="display:none; margin-top:1rem;">
       <div class="divider">OR RESTORE</div>
@@ -2289,15 +2290,19 @@ function launchGame(type) {
 // ── Identity & Key ───────────────────────────
 
 function downloadKey() {
-  const content = `VEILX Recovery Key\n==================\n${identity.key}\n\nCodename: ${identity.codename}\n\nWARNING: Keep this safe. We cannot recover a lost key.\nDo not share this with anyone.`;
-  const blob = new Blob([content], { type:'text/plain' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'VEILX_recovery_key.txt';
-  a.click();
+  try {
+    const content = 'VEILX Recovery Key\n==================\n' + identity.key + '\n\nCodename: ' + identity.codename + '\n\nWARNING: Keep this safe.';
+    const blob = new Blob([content], { type:'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'VEILX_recovery_key.txt';
+    a.click();
+  } catch(e) {
+    console.log('Download skipped:', e);
+  }
+  // Always enter app regardless
   enterApp();
 }
-
 function copyKey() {
   navigator.clipboard.writeText(identity.key).then(() => showToast('Key copied!', 'success'));
 }
