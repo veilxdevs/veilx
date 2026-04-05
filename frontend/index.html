@@ -599,6 +599,11 @@ function switchPanel(name, navEl) {
   document.getElementById('topbar').style.display = '';
   const titles = {home:'Home',rooms:'Rooms',problems:'Ask Community',code:'Codespace',games:'Gaming Zone',settings:'Settings'};
   document.getElementById('topbar-title').textContent = titles[name] || name;
+  // Hide voice section when not on rooms panel
+const voiceSection = document.getElementById('voice-section');
+if (voiceSection) {
+  voiceSection.style.display = name === 'rooms' ? 'block' : 'none';
+} 
   if (name === 'settings') updateUI();
 }
 
