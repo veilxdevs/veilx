@@ -329,6 +329,8 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
           <div class="room-type-card" onclick="selectRoomType(this,'🧠 Debate')"><div class="rt-icon">🧠</div><div class="rt-name">Debate</div></div>
           <div class="room-type-card" onclick="selectRoomType(this,'🎭 Roleplay')"><div class="rt-icon">🎭</div><div class="rt-name">Roleplay</div></div>
           <div class="room-type-card" onclick="selectRoomType(this,'📚 Study')"><div class="rt-icon">📚</div><div class="rt-name">Study</div></div>
+          <div class="room-type-card" onclick="selectRoomType(this,'🔥 Rant')"><div class="rt-icon">🔥</div><div class="rt-name">Rant</div></div>
+        </div>
           <!-- Voice Room Section -->
 <div id="voice-section" style="margin-bottom:1.5rem">
   <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.75rem">🎙️ VOICE ROOMS</div>
@@ -348,8 +350,6 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
     <div id="voice-peers-list" style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap"></div>
   </div>
 </div>
-          <div class="room-type-card" onclick="selectRoomType(this,'🔥 Rant')"><div class="rt-icon">🔥</div><div class="rt-name">Rant</div></div>
-        </div>
         <div class="rooms-header">
           <input class="room-input" id="room-code-input" placeholder="Enter 6-digit room code" maxlength="6"/>
           <button class="btn-sm btn-outline" onclick="joinRoom()">Join Room</button>
