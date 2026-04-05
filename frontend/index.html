@@ -268,6 +268,23 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
       </div>
       <div class="messages" id="messages"></div>
       <div class="chat-input-area">
+  <button onclick="triggerFileUpload()" style="
+    background:var(--surface2);
+    border:1px solid var(--border);
+    border-radius:50%;
+    width:40px;height:40px;
+    display:flex;align-items:center;
+    justify-content:center;
+    cursor:pointer;font-size:1rem;
+    flex-shrink:0;transition:all 0.15s"
+    title="Share a file">📎</button>
+  <input type="file" id="file-upload-input"
+    style="display:none" onchange="uploadFile(this)"/>
+  <textarea class="chat-input" id="chat-input"
+    placeholder="Type a message..." rows="1"
+    oninput="autoResize(this)"></textarea>
+  <button class="send-btn" onclick="sendMessage()">➤</button>
+</div>
         <textarea class="chat-input" id="chat-input" placeholder="Type a message..." rows="1" oninput="autoResize(this)"></textarea>
         <button class="send-btn" onclick="sendMessage()">➤</button>
       </div>
@@ -349,11 +366,12 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
     </div>
     <div id="voice-peers-list" style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap"></div>
   </div>
-</div>
+</div></div>
         <div class="rooms-header">
           <input class="room-input" id="room-code-input" placeholder="Enter 6-digit room code" maxlength="6"/>
           <button class="btn-sm btn-outline" onclick="joinRoom()">Join Room</button>
           <button class="btn-sm btn-accent" onclick="createRoom()">+ Create Room</button>
+          <button class="btn-sm btn-outline" onclick="showFileDownload()" style="margin-top:0.5rem;width:100%">📎 Download Shared File</button> 
         </div>
       </div>
 
@@ -1285,6 +1303,188 @@ window.leaveRoom = function() {
   if (inVoiceRoom) leaveVoiceRoom();
   _leaveRoomOriginal();
 };
+// ════════════════════════════════════════════
+// VEILX Phase 3 Step 2 — File Sharing JS
+
+// ════════════════════════════════════════════
+
+// ── Trigger file picker ──────────────────────
+function triggerFileUpload() {
+  if (!currentRoom) {
+    showToast('Join a room first to share files', 'error');
+    return;
+  }
+  document.getElementById('file-upload-input').click();
+}
+
+// ── Upload file ──────────────────────────────
+async function uploadFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  // Check size client-side first
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('File too large. Max 10MB.', 'error');
+    input.value = '';
+    return;
+  }
+
+  showToast('Uploading file...', 'success');
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch('/api/files/upload', {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      showToast(data.error || 'Upload failed', 'error');
+      return;
+    }
+
+    // Send file link as a chat message
+    const fileMessage = '📎 FILE: ' + data.name +
+      ' (' + formatFileSize(data.size) + ')' +
+      ' | Code: ' + data.fileId +
+      ' | Expires: 24hrs | Max downloads: 10';
+
+    messages.push({
+      sender: identity.codename,
+      avatar: identity.emoji,
+      text: fileMessage,
+      time: new Date().toLocaleTimeString([], {
+        hour: '2-digit', minute: '2-digit'
+      }),
+      isFile: true,
+      fileId: data.fileId,
+      fileName: data.name,
+      fileSize: data.size
+    });
+
+    renderMessages();
+    showToast('File shared! Code: ' + data.fileId, 'success');
+
+  } catch (err) {
+    showToast('Upload failed. Try again.', 'error');
+  }
+
+  // Reset input
+  input.value = '';
+}
+
+// ── Download file by code ────────────────────
+async function downloadFile(fileId) {
+  try {
+    // Check file info first
+    const infoRes = await fetch('/api/files/' + fileId + '/info');
+    if (!infoRes.ok) {
+      showToast('File not found or expired', 'error');
+      return;
+    }
+
+    const info = await infoRes.json();
+    showToast('Downloading ' + info.name + '...', 'success');
+
+    // Download the file
+    const a = document.createElement('a');
+    a.href = '/api/files/' + fileId;
+    a.download = info.name;
+    a.click();
+
+  } catch (err) {
+    showToast('Download failed', 'error');
+  }
+}
+
+// ── Download by entering code manually ───────
+function showFileDownload() {
+  const code = prompt('Enter file code (e.g. AB12CD34):');
+  if (!code) return;
+  downloadFile(code.trim().toUpperCase());
+}
+
+// ── Format file size ─────────────────────────
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// ── Override renderMessages to show file cards ─
+const _renderMessagesOriginal = renderMessages;
+window.renderMessages = function() {
+  const container = document.getElementById('messages');
+  if (!container) return;
+
+  container.innerHTML = messages.map(function(m) {
+    if (m.type === 'system') {
+      return '<div class="system-msg">' + m.text + '</div>';
+    }
+
+    var own = m.sender === identity.codename;
+
+    // File message — show as download card
+    if (m.isFile) {
+      var card =
+        '<div style="background:var(--surface2);border:1px solid var(--border);' +
+        'border-radius:8px;padding:0.75rem 1rem;margin-top:0.25rem">' +
+          '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--accent);' +
+          'letter-spacing:1px;margin-bottom:0.3rem">📎 SHARED FILE</div>' +
+          '<div style="font-size:0.82rem;font-weight:800;margin-bottom:0.2rem">' +
+            escHtml(m.fileName) +
+          '</div>' +
+          '<div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);' +
+          'margin-bottom:0.5rem">' +
+            formatFileSize(m.fileSize) + ' · Code: ' + m.fileId + ' · Expires 24hrs' +
+          '</div>' +
+          '<button onclick="downloadFile(\'' + m.fileId + '\')" style="' +
+          'background:linear-gradient(135deg,var(--accent),#5a4fff);' +
+          'border:none;border-radius:6px;color:white;font-family:var(--display);' +
+          'font-size:0.75rem;font-weight:600;padding:0.35rem 0.75rem;cursor:pointer">' +
+          '⬇ Download' +
+          '</button>' +
+        '</div>';
+
+      return '<div class="message ' + (own ? 'own' : '') + '">' +
+        '<div class="msg-avatar">' + m.avatar + '</div>' +
+        '<div class="msg-body">' +
+          '<div class="msg-meta">' +
+            '<span class="msg-name">' + m.sender + '</span>' +
+            '<span>' + m.time + '</span>' +
+          '</div>' +
+          card +
+        '</div></div>';
+    }
+
+    // Normal message
+    var reportBtn = !own
+      ? '<div style="text-align:right;margin-top:3px">' +
+        '<button onclick="openReport(\'message\',\'' + m.sender + '\')" ' +
+        'style="background:transparent;border:none;cursor:pointer;' +
+        'font-size:0.6rem;color:var(--muted);font-family:var(--mono)">⚑ report</button>' +
+        '</div>'
+      : '';
+
+    return '<div class="message ' + (own ? 'own' : '') + '">' +
+      '<div class="msg-avatar">' + m.avatar + '</div>' +
+      '<div class="msg-body">' +
+        '<div class="msg-meta">' +
+          '<span class="msg-name">' + m.sender + '</span>' +
+          '<span>' + m.time + '</span>' +
+        '</div>' +
+        '<div class="msg-bubble">' + escHtml(m.text) + '</div>' +
+        reportBtn +
+      '</div></div>';
+
+  }).join('');
+
+  container.scrollTop = container.scrollHeight;
+};  
 </script>
 
 </body>

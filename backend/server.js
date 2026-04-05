@@ -1,3 +1,5 @@
+const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -220,6 +222,143 @@ setInterval(() => {
 // Health checks
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
+});
+// ════════════════════════════════════════════
+// VEILX Phase 3 Step 2 — Temporary File Sharing
+// Add this block after /api/health route
+// Files auto-delete after 24 hours
+// Max file size: 10MB
+// No identity stored with files
+// ════════════════════════════════════════════
+
+// In-memory file store — no disk writes
+const fileStore = new Map();
+// Structure: fileId -> { name, type, size, data, createdAt, downloads }
+
+// Multer — store files in memory only
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB max
+    files: 1
+  },
+  fileFilter: (req, file, cb) => {
+    // Block dangerous file types
+    const blocked = [
+      'application/x-executable',
+      'application/x-msdownload',
+      'application/x-sh',
+      'application/x-bat'
+    ];
+    const blockedExt = ['.exe','.bat','.sh','.cmd','.msi','.dll','.com'];
+    const ext = '.' + file.originalname.split('.').pop().toLowerCase();
+
+    if (blocked.includes(file.mimetype) || blockedExt.includes(ext)) {
+      return cb(new Error('File type not allowed'));
+    }
+    cb(null, true);
+  }
+});
+
+// ── Upload a file ────────────────────────────
+app.post('/api/files/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
+  const fileId = uuidv4().substring(0, 8).toUpperCase();
+
+  fileStore.set(fileId, {
+    name: req.file.originalname.substring(0, 100),
+    type: req.file.mimetype,
+    size: req.file.size,
+    data: req.file.buffer,
+    createdAt: Date.now(),
+    downloads: 0,
+    maxDownloads: 10 // Max 10 downloads per file
+  });
+
+  res.json({
+    success: true,
+    fileId,
+    name: req.file.originalname,
+    size: req.file.size,
+    expiresIn: '24 hours',
+    maxDownloads: 10
+  });
+});
+
+// ── Download a file ──────────────────────────
+app.get('/api/files/:fileId', (req, res) => {
+  const fileId = req.params.fileId.toUpperCase();
+  const file = fileStore.get(fileId);
+
+  if (!file) {
+    return res.status(404).json({ error: 'File not found or expired' });
+  }
+
+  // Check download limit
+  if (file.downloads >= file.maxDownloads) {
+    fileStore.delete(fileId);
+    return res.status(410).json({ error: 'File download limit reached' });
+  }
+
+  file.downloads++;
+
+  // Set headers for download
+  res.setHeader('Content-Disposition', 'attachment; filename="' + file.name + '"');
+  res.setHeader('Content-Type', file.type);
+  res.setHeader('Content-Length', file.size);
+  res.send(file.data);
+});
+
+// ── Get file info (no download) ──────────────
+app.get('/api/files/:fileId/info', (req, res) => {
+  const fileId = req.params.fileId.toUpperCase();
+  const file = fileStore.get(fileId);
+
+  if (!file) {
+    return res.status(404).json({ error: 'File not found or expired' });
+  }
+
+  // Return info without the actual data
+  res.json({
+    name: file.name,
+    type: file.type,
+    size: file.size,
+    downloads: file.downloads,
+    maxDownloads: file.maxDownloads,
+    expiresIn: Math.max(0, Math.floor((file.createdAt + 24*60*60*1000 - Date.now()) / 60000)) + ' minutes'
+  });
+});
+
+// ── Auto-delete files after 24 hours ─────────
+setInterval(() => {
+  const now = Date.now();
+  const twentyFourHours = 24 * 60 * 60 * 1000;
+  let deleted = 0;
+
+  for (const [id, file] of fileStore.entries()) {
+    if (now - file.createdAt > twentyFourHours) {
+      fileStore.delete(id);
+      deleted++;
+    }
+  }
+
+  if (deleted > 0) {
+    console.log('[VEILX] Auto-deleted ' + deleted + ' expired files');
+  }
+}, 60 * 60 * 1000); // Check every hour
+
+// Handle multer errors
+app.use((err, req, res, next) => {
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({ error: 'File too large. Max 10MB.' });
+  }
+  if (err.message === 'File type not allowed') {
+    return res.status(400).json({ error: 'File type not allowed.' });
+  }
+  next(err);
 });
 // ════════════════════════════════════════════
 // VEILX Phase 3 Step 1 — Voice Room Signaling
