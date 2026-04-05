@@ -332,9 +332,12 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
           <div class="welcome-sub">Completely anonymous. No IP logged. No identity stored on servers.</div>
         </div>
         <div class="grid-3">
-          <div class="zone-card" onclick="switchPanel('rooms',document.querySelectorAll('.nav-item')[1])">
-            <div class="zone-badge live-badge">LIVE</div>
-            <div class="zone-icon">🚪</div><div class="zone-name">Rooms</div>
+          <div class="zone-card" onclick="showWordDuel()">
+  <div class="zone-badge live-badge">LIVE</div>
+  <div class="zone-icon">🧩</div>
+  <div class="zone-name">Word Duel</div>
+  <div class="zone-desc">Real-time anonymous word battle</div>
+</div>
             <div class="zone-desc">Join or create private encrypted chat rooms</div>
           </div>
           <div class="zone-card" onclick="switchPanel('problems',document.querySelectorAll('.nav-item')[2])">
@@ -1518,6 +1521,286 @@ window.renderMessages = function() {
 
   container.scrollTop = container.scrollHeight;
 };  
+
+// ════════════════════════════════════════════
+// VEILX Phase 3 Step 3 — Word Duel Game JS
+// ════════════════════════════════════════════
+
+let wordDuelState = {
+  gameCode: null,
+  isMyTurn: false,
+  currentWord: '',
+  timer: null,
+  timeLeft: 30,
+  isHost: false
+};
+
+// ── Show Word Duel UI ────────────────────────
+function showWordDuel() {
+  const area = document.getElementById('game-area');
+  area.innerHTML =
+    '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;max-width:500px;margin-top:1rem">' +
+
+      '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);letter-spacing:2px;margin-bottom:1rem">🧩 WORD DUEL</div>' +
+
+      '<div style="font-size:0.85rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6">' +
+        'Chain words together — each word must start with the last letter of the previous word. Longer words = more points!' +
+      '</div>' +
+
+      '<div style="display:flex;flex-direction:column;gap:0.75rem">' +
+
+        '<button class="btn-sm btn-accent" onclick="createWordDuel()" style="width:100%">' +
+          '🎮 Create New Game' +
+        '</button>' +
+
+        '<div style="display:flex;gap:0.5rem">' +
+          '<input id="wordduel-code-input" placeholder="Enter game code..." style="' +
+            'flex:1;background:var(--surface2);border:1px solid var(--border);' +
+            'border-radius:8px;padding:0.65rem 1rem;color:var(--text);' +
+            'font-family:var(--mono);font-size:0.85rem;letter-spacing:2px;' +
+            'outline:none;text-transform:uppercase" maxlength="5"/>' +
+          '<button class="btn-sm btn-outline" onclick="joinWordDuel()">Join</button>' +
+        '</div>' +
+
+      '</div>' +
+
+      '<div id="wordduel-game-area" style="margin-top:1.25rem"></div>' +
+
+    '</div>';
+}
+
+// ── Create Game ──────────────────────────────
+function createWordDuel() {
+  if (!window._socket) { showToast('Connect to server first', 'error'); return; }
+  wordDuelState.isHost = true;
+  window._socket.emit('wordduel_create', { codename: identity.codename });
+}
+
+// ── Join Game ────────────────────────────────
+function joinWordDuel() {
+  const code = document.getElementById('wordduel-code-input')?.value.trim().toUpperCase();
+  if (!code || code.length !== 5) { showToast('Enter a valid 5-character game code', 'error'); return; }
+  if (!window._socket) { showToast('Connect to server first', 'error'); return; }
+  wordDuelState.isHost = false;
+  window._socket.emit('wordduel_join', { gameCode: code, codename: identity.codename });
+}
+
+// ── Start Game (host only) ───────────────────
+function startWordDuel() {
+  if (!wordDuelState.gameCode || !window._socket) return;
+  window._socket.emit('wordduel_start', { gameCode: wordDuelState.gameCode });
+}
+
+// ── Submit Word ──────────────────────────────
+function submitWordDuelAnswer() {
+  const input = document.getElementById('wordduel-word-input');
+  if (!input) return;
+  const word = input.value.trim().toLowerCase();
+  if (!word) { showToast('Enter a word', 'error'); return; }
+  if (!wordDuelState.isMyTurn) { showToast('Not your turn!', 'error'); return; }
+  if (!window._socket) return;
+  window._socket.emit('wordduel_answer', { gameCode: wordDuelState.gameCode, word });
+  input.value = '';
+}
+
+// ── Render Waiting Room ──────────────────────
+function renderWordDuelWaiting(data) {
+  const area = document.getElementById('wordduel-game-area');
+  if (!area) return;
+
+  area.innerHTML =
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1rem">' +
+
+      '<div style="font-family:var(--mono);font-size:0.65rem;color:var(--accent);letter-spacing:2px;margin-bottom:0.75rem">' +
+        'GAME CODE: ' + wordDuelState.gameCode +
+      '</div>' +
+
+      '<div style="font-family:var(--mono);font-size:0.7rem;color:var(--muted);margin-bottom:0.5rem">PLAYERS (' + data.players.length + '/4):</div>' +
+
+      data.players.map(function(p, i) {
+        return '<div style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0;font-size:0.82rem">' +
+          '<span>' + (i === 0 ? '👑' : '👤') + '</span>' +
+          '<span>' + escHtml(p.codename) + '</span>' +
+          (i === 0 ? '<span style="font-family:var(--mono);font-size:0.6rem;color:var(--accent)">(host)</span>' : '') +
+        '</div>';
+      }).join('') +
+
+      (data.message ? '<div style="font-family:var(--mono);font-size:0.65rem;color:var(--success);margin-top:0.5rem">→ ' + escHtml(data.message) + '</div>' : '') +
+
+      (wordDuelState.isHost ?
+        '<button class="btn-sm btn-accent" onclick="startWordDuel()" style="width:100%;margin-top:1rem">' +
+          (data.players.length >= 2 ? '▶ Start Game' : 'Waiting for players...') +
+        '</button>' :
+        '<div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);margin-top:1rem;text-align:center">Waiting for host to start...</div>'
+      ) +
+
+    '</div>';
+}
+
+// ── Render Game In Progress ──────────────────
+function renderWordDuelPlaying(data) {
+  const area = document.getElementById('wordduel-game-area');
+  if (!area) return;
+
+  wordDuelState.isMyTurn = data.currentPlayer === identity.codename;
+  wordDuelState.currentWord = data.currentWord;
+
+  // Reset timer
+  clearInterval(wordDuelState.timer);
+  wordDuelState.timeLeft = 30;
+
+  if (wordDuelState.isMyTurn) {
+    wordDuelState.timer = setInterval(function() {
+      wordDuelState.timeLeft--;
+      const timerEl = document.getElementById('wordduel-timer');
+      if (timerEl) {
+        timerEl.textContent = wordDuelState.timeLeft + 's';
+        timerEl.style.color = wordDuelState.timeLeft <= 10 ? 'var(--danger)' : 'var(--success)';
+      }
+      if (wordDuelState.timeLeft <= 0) clearInterval(wordDuelState.timer);
+    }, 1000);
+  }
+
+  area.innerHTML =
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1rem">' +
+
+      // Round info
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">' +
+        '<div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)">ROUND ' + data.round + ' / ' + data.maxRounds + '</div>' +
+        (wordDuelState.isMyTurn ?
+          '<div id="wordduel-timer" style="font-family:var(--mono);font-size:0.8rem;color:var(--success);font-weight:700">' + wordDuelState.timeLeft + 's</div>' :
+          '<div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)">⏳ ' + escHtml(data.currentPlayer) + "'s turn</div>"
+        ) +
+      '</div>' +
+
+      // Current word
+      '<div style="text-align:center;margin-bottom:1rem">' +
+        '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);margin-bottom:0.4rem">CURRENT WORD</div>' +
+        '<div style="font-size:2rem;font-weight:800;color:var(--accent);letter-spacing:4px">' + escHtml(data.currentWord.toUpperCase()) + '</div>' +
+        '<div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);margin-top:0.3rem">' +
+          'Next word must start with <span style="color:var(--accent2);font-weight:700">' +
+          data.currentWord[data.currentWord.length-1].toUpperCase() + '</span>' +
+        '</div>' +
+      '</div>' +
+
+      // Scoreboard
+      '<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem">' +
+        data.players.map(function(p) {
+          var isActive = p.codename === data.currentPlayer;
+          return '<div style="background:var(--surface);border:1px solid ' + (isActive ? 'var(--accent)' : 'var(--border)') + ';border-radius:8px;padding:0.4rem 0.75rem;font-family:var(--mono);font-size:0.65rem">' +
+            '<span style="color:' + (isActive ? 'var(--accent)' : 'var(--muted)') + '">' + escHtml(p.codename) + '</span>' +
+            '<span style="color:var(--success);margin-left:0.5rem">' + p.score + 'pts</span>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+
+      // Input (only if my turn)
+      (wordDuelState.isMyTurn ?
+        '<div style="display:flex;gap:0.5rem">' +
+          '<input id="wordduel-word-input" placeholder="Type your word..." style="' +
+            'flex:1;background:var(--surface);border:1px solid var(--accent);' +
+            'border-radius:8px;padding:0.65rem 1rem;color:var(--text);' +
+            'font-family:var(--mono);font-size:0.85rem;outline:none;' +
+            'text-transform:lowercase" autofocus' +
+            ' onkeydown="if(event.key===\'Enter\')submitWordDuelAnswer()"/>' +
+          '<button class="btn-sm btn-accent" onclick="submitWordDuelAnswer()">→</button>' +
+        '</div>' :
+        '<div style="text-align:center;font-family:var(--mono);font-size:0.7rem;color:var(--muted);padding:0.5rem">' +
+          'Waiting for ' + escHtml(data.currentPlayer) + ' to play...' +
+        '</div>'
+      ) +
+
+    '</div>';
+}
+
+// ── Render Game Over ─────────────────────────
+function renderWordDuelEnded(data) {
+  clearInterval(wordDuelState.timer);
+  const area = document.getElementById('wordduel-game-area');
+  if (!area) return;
+
+  area.innerHTML =
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1.25rem;text-align:center">' +
+
+      '<div style="font-size:2rem;margin-bottom:0.5rem">🏆</div>' +
+      '<div style="font-size:1rem;font-weight:800;margin-bottom:0.25rem">Game Over!</div>' +
+      '<div style="font-family:var(--mono);font-size:0.75rem;color:var(--accent);margin-bottom:1.25rem">' +
+        escHtml(data.winner) + ' wins!' +
+      '</div>' +
+
+      '<div style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:1.25rem">' +
+        data.players.map(function(p, i) {
+          var medals = ['🥇','🥈','🥉','4️⃣'];
+          return '<div style="display:flex;align-items:center;justify-content:space-between;' +
+            'background:var(--surface);border:1px solid var(--border);border-radius:8px;' +
+            'padding:0.5rem 0.75rem;font-family:var(--mono);font-size:0.75rem">' +
+            '<span>' + medals[i] + ' ' + escHtml(p.codename) + '</span>' +
+            '<span style="color:var(--success)">' + p.score + ' pts</span>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+
+      '<button class="btn-sm btn-accent" onclick="showWordDuel()" style="width:100%">🔄 Play Again</button>' +
+
+    '</div>';
+
+  wordDuelState = { gameCode: null, isMyTurn: false, currentWord: '', timer: null, timeLeft: 30, isHost: false };
+}
+
+// ── Socket Event Handlers ────────────────────
+function initWordDuelHandlers(socket) {
+
+  socket.on('wordduel_created', function(data) {
+    wordDuelState.gameCode = data.gameCode;
+    showToast('Game created! Code: ' + data.gameCode, 'success');
+    renderWordDuelWaiting({
+      players: [{ codename: identity.codename }],
+      message: null
+    });
+  });
+
+  socket.on('wordduel_update', function(data) {
+    if (!wordDuelState.gameCode) return;
+    renderWordDuelWaiting(data);
+  });
+
+  socket.on('wordduel_started', function(data) {
+    showToast('Game started!', 'success');
+    renderWordDuelPlaying({
+      ...data,
+      players: [],
+      round: 1
+    });
+  });
+
+  socket.on('wordduel_correct', function(data) {
+    showToast('✓ ' + escHtml(data.word) + ' +' + data.word.length + ' pts', 'success');
+    renderWordDuelPlaying(data);
+  });
+
+  socket.on('wordduel_invalid', function(data) {
+    showToast(data.message, 'error');
+  });
+
+  socket.on('wordduel_timeout', function(data) {
+    showToast(escHtml(data.player) + ' ran out of time!', 'error');
+    renderWordDuelPlaying({
+      currentWord: data.currentWord,
+      currentPlayer: data.currentPlayer,
+      round: data.round,
+      maxRounds: 20,
+      players: []
+    });
+  });
+
+  socket.on('wordduel_ended', function(data) {
+    renderWordDuelEnded(data);
+  });
+
+  socket.on('wordduel_error', function(data) {
+    showToast(data.message, 'error');
+  });
+}
 </script>
 
 </body>

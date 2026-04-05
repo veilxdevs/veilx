@@ -605,7 +605,211 @@ io.on('connection', (socket) => {
 
     io.to(currentRoom).emit('message', payload);
   });
+// ════════════════════════════════════════════
+// VEILX Phase 3 Step 3 — Word Duel Game
+// Add this block BEFORE get_room_token socket
+// ════════════════════════════════════════════
 
+// ── Word Duel Game Store ─────────────────────
+const wordGames = new Map();
+// Structure: gameCode -> {
+//   players: [{id, codename, score}],
+//   currentWord: '',
+//   usedWords: Set,
+//   status: 'waiting'|'playing'|'finished',
+//   currentPlayerIndex: 0,
+//   timeLimit: 30,
+//   round: 0,
+//   maxRounds: 10
+// }
+
+const WORD_LIST = [
+  'apple','brave','cloud','dance','earth','flame','grace','heart','ivory','jewel',
+  'knife','lemon','magic','night','ocean','peace','queen','river','stone','tiger',
+  'unity','voice','water','xenon','yacht','zebra','angel','blood','crane','drift',
+  'eagle','frost','ghost','honey','image','judge','karma','light','maple','noble',
+  'ozone','paint','quest','radar','solar','tower','ultra','vapor','wheat','xenon',
+  'young','zenith','amber','blaze','coral','depth','elite','fairy','grove','haste',
+  'inner','joker','knack','lunar','mirth','nerve','orbit','prism','quota','realm',
+  'spark','thorn','umbra','vivid','windy','xylem','yearn','zonal','arctic','beach',
+  'crest','delta','ember','flint','gloom','haven','inlet','jazzy','kinky','lodge',
+  'mango','nexus','oasis','plaza','quirk','ridge','swift','trend','under','vault'
+];
+
+// Word Duel socket handlers
+socket.on('wordduel_create', ({ codename }) => {
+  const gameCode = Math.random().toString(36).substring(2,7).toUpperCase();
+  wordGames.set(gameCode, {
+    players: [{ id: socket.id, codename: sanitize(codename || 'Anonymous', 20), score: 0 }],
+    currentWord: '',
+    usedWords: new Set(),
+    status: 'waiting',
+    currentPlayerIndex: 0,
+    round: 0,
+    maxRounds: 10
+  });
+  socket.join('wordduel_' + gameCode);
+  socket.emit('wordduel_created', { gameCode });
+});
+
+socket.on('wordduel_join', ({ gameCode, codename }) => {
+  const code = (gameCode || '').toUpperCase();
+  const game = wordGames.get(code);
+
+  if (!game) { socket.emit('wordduel_error', { message: 'Game not found' }); return; }
+  if (game.players.length >= 4) { socket.emit('wordduel_error', { message: 'Game is full (max 4)' }); return; }
+  if (game.status !== 'waiting') { socket.emit('wordduel_error', { message: 'Game already started' }); return; }
+
+  game.players.push({ id: socket.id, codename: sanitize(codename || 'Anonymous', 20), score: 0 });
+  socket.join('wordduel_' + code);
+
+  io.to('wordduel_' + code).emit('wordduel_update', {
+    players: game.players.map(p => ({ codename: p.codename, score: p.score })),
+    status: game.status,
+    message: sanitize(codename || 'Anonymous', 20) + ' joined the game!'
+  });
+});
+
+socket.on('wordduel_start', ({ gameCode }) => {
+  const code = (gameCode || '').toUpperCase();
+  const game = wordGames.get(code);
+  if (!game) return;
+  if (game.players.length < 2) { socket.emit('wordduel_error', { message: 'Need at least 2 players' }); return; }
+  if (game.players[0].id !== socket.id) { socket.emit('wordduel_error', { message: 'Only host can start' }); return; }
+
+  game.status = 'playing';
+  game.round = 1;
+
+  // Pick first word randomly
+  const firstWord = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
+  game.currentWord = firstWord;
+  game.usedWords.add(firstWord);
+
+  io.to('wordduel_' + code).emit('wordduel_started', {
+    currentWord: firstWord,
+    currentPlayer: game.players[0].codename,
+    round: game.round,
+    maxRounds: game.maxRounds,
+    timeLimit: 30
+  });
+
+  // Start turn timer
+  startWordDuelTimer(code);
+});
+
+socket.on('wordduel_answer', ({ gameCode, word }) => {
+  const code = (gameCode || '').toUpperCase();
+  const game = wordGames.get(code);
+  if (!game || game.status !== 'playing') return;
+
+  const currentPlayer = game.players[game.currentPlayerIndex];
+  if (currentPlayer.id !== socket.id) return;
+
+  const cleanWord = sanitize((word || '').toLowerCase().trim(), 30);
+
+  // Validate word
+  if (!cleanWord || cleanWord.length < 2) {
+    socket.emit('wordduel_error', { message: 'Word too short' });
+    return;
+  }
+
+  // Must start with last letter of current word
+  const lastLetter = game.currentWord[game.currentWord.length - 1];
+  if (cleanWord[0] !== lastLetter) {
+    socket.emit('wordduel_invalid', {
+      message: 'Word must start with "' + lastLetter.toUpperCase() + '"'
+    });
+    return;
+  }
+
+  // Must not be used before
+  if (game.usedWords.has(cleanWord)) {
+    socket.emit('wordduel_invalid', { message: 'Word already used!' });
+    return;
+  }
+
+  // Valid word — award points
+  currentPlayer.score += cleanWord.length;
+  game.usedWords.add(cleanWord);
+  game.currentWord = cleanWord;
+  game.round++;
+
+  // Move to next player
+  game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
+
+  // Check if game over
+  if (game.round > game.maxRounds * game.players.length) {
+    endWordDuelGame(code);
+    return;
+  }
+
+  const nextPlayer = game.players[game.currentPlayerIndex];
+
+  io.to('wordduel_' + code).emit('wordduel_correct', {
+    word: cleanWord,
+    player: currentPlayer.codename,
+    score: currentPlayer.score,
+    players: game.players.map(p => ({ codename: p.codename, score: p.score })),
+    currentWord: cleanWord,
+    currentPlayer: nextPlayer.codename,
+    round: game.round,
+    maxRounds: game.maxRounds * game.players.length
+  });
+
+  // Reset timer for next player
+  startWordDuelTimer(code);
+});
+
+function startWordDuelTimer(code) {
+  const game = wordGames.get(code);
+  if (!game) return;
+
+  // Clear existing timer
+  if (game.timer) clearTimeout(game.timer);
+
+  game.timer = setTimeout(() => {
+    const g = wordGames.get(code);
+    if (!g || g.status !== 'playing') return;
+
+    // Current player lost their turn
+    const currentPlayer = g.players[g.currentPlayerIndex];
+    g.currentPlayerIndex = (g.currentPlayerIndex + 1) % g.players.length;
+    g.round++;
+
+    if (g.round > g.maxRounds * g.players.length) {
+      endWordDuelGame(code);
+      return;
+    }
+
+    io.to('wordduel_' + code).emit('wordduel_timeout', {
+      player: currentPlayer.codename,
+      currentPlayer: g.players[g.currentPlayerIndex].codename,
+      currentWord: g.currentWord,
+      round: g.round
+    });
+
+    startWordDuelTimer(code);
+  }, 30000); // 30 second timer
+}
+
+function endWordDuelGame(code) {
+  const game = wordGames.get(code);
+  if (!game) return;
+
+  if (game.timer) clearTimeout(game.timer);
+  game.status = 'finished';
+
+  // Sort players by score
+  const sorted = [...game.players].sort((a, b) => b.score - a.score);
+
+  io.to('wordduel_' + code).emit('wordduel_ended', {
+    winner: sorted[0].codename,
+    players: sorted.map(p => ({ codename: p.codename, score: p.score }))
+  });
+
+  // Delete game after 5 minutes
+  setTimeout(() => wordGames.delete(code), 5 * 60 * 1000);
+}
   socket.on('get_room_token', ({ code }) => {
     const token = getRoomToken(code.toUpperCase());
     socket.emit('room_token', { token });
