@@ -78,7 +78,8 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
-} 
+  max-width: calc(100vw - 260px);
+}
 .topbar { padding:1rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--surface); flex-shrink:0; }
 .topbar-title { font-size:1.1rem; font-weight:800; }
 .topbar-actions { display:flex; gap:0.5rem; }
@@ -89,6 +90,7 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
   overflow-y: auto;
   overflow-x: hidden;
   padding: 1.5rem;
+  width: 0;
   min-width: 0;
 }
 .panel { display:none; }
@@ -109,7 +111,7 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
 .welcome-sub { color:var(--muted); font-size:0.85rem; line-height:1.6; }
 .grid-3 {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
