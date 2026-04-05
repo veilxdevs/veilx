@@ -284,9 +284,10 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
     <div class="topbar" id="topbar">
       <div class="topbar-title" id="topbar-title">Home</div>
       <div class="topbar-actions">
-        <button class="icon-btn" onclick="showKeyModal()">🔑 My Key</button>
-        <button class="icon-btn" onclick="logout()">← Exit</button>
-      </div>
+  <button class="icon-btn" onclick="toggleLanguage()" id="lang-btn">🌐 हिंदी</button>
+  <button class="icon-btn" onclick="showKeyModal()">🔑 My Key</button>
+  <button class="icon-btn" onclick="logout()">← Exit</button>
+</div>
     </div>
 
     <!-- Chat Room -->
@@ -1801,6 +1802,381 @@ function initWordDuelHandlers(socket) {
     showToast(data.message, 'error');
   });
 }
+/* Language transition */
+.lang-transition * {
+  transition: opacity 0.2s ease;
+  opacity: 0.5;
+}
+// ════════════════════════════════════════════
+// VEILX Phase 3 Step 4 — Hindi/Urdu Language
+// ════════════════════════════════════════════
+
+let currentLang = localStorage.getItem('veilx_lang') || 'en';
+
+// ── All translations ─────────────────────────
+const TRANSLATIONS = {
+  en: {
+    // Navigation
+    'nav_home': 'Home',
+    'nav_rooms': 'Rooms',
+    'nav_ask': 'Ask Community',
+    'nav_code': 'Codespace',
+    'nav_games': 'Gaming Zone',
+    'nav_settings': 'Settings',
+    'nav_identity': 'New Identity',
+
+    // Topbar
+    'btn_mykey': '🔑 My Key',
+    'btn_exit': '← Exit',
+    'btn_lang': '🌐 हिंदी',
+
+    // Home panel
+    'home_sub': 'Completely anonymous. No IP logged. No identity stored on servers.',
+    'zone_rooms': 'Rooms',
+    'zone_rooms_desc': 'Join or create private encrypted chat rooms',
+    'zone_ask': 'Ask Community',
+    'zone_ask_desc': 'Post problems anonymously, get real solutions',
+    'zone_code': 'Codespace',
+    'zone_code_desc': 'Write, run and share code in your browser',
+    'zone_games': 'Gaming Zone',
+    'zone_games_desc': 'Anonymous multiplayer browser games',
+    'zone_random': 'Random Chat',
+    'zone_random_desc': 'Match with a stranger anonymously',
+    'zone_trending': 'Trending',
+    'zone_trending_desc': 'See what the community is discussing',
+    'security_e2e': '🔒 E2E Encryption: ON',
+    'security_ip': '🛡 IP Masking: ON',
+    'security_cookie': '📵 No Cookies: ON',
+    'security_delete': '🗑 Auto-Delete: ON',
+
+    // Rooms
+    'rooms_title': 'Join or Create a Room',
+    'room_type_label': 'ROOM TYPE',
+    'room_placeholder': 'Enter 6-digit room code',
+    'btn_join': 'Join Room',
+    'btn_create': '+ Create Room',
+
+    // Problems
+    'post_label': 'POST ANONYMOUSLY',
+    'post_placeholder': 'Describe your problem openly. Nobody knows who you are...',
+    'btn_post': 'Post Problem →',
+    'cat_general': 'General',
+    'cat_mental': 'Mental Health',
+    'cat_relations': 'Relationships',
+    'cat_finance': 'Finance',
+    'cat_career': 'Career',
+    'cat_tech': 'Tech',
+    'cat_studies': 'Studies',
+
+    // Chat
+    'chat_placeholder': 'Type a message...',
+    'btn_back': '← Back',
+
+    // Settings
+    'settings_title': 'Settings',
+    'settings_identity': '🎭 Identity',
+    'settings_identity_desc': 'Your anonymous codename and avatar.',
+    'btn_regenerate': '🎲 Regenerate Identity',
+    'settings_key': '🔑 Recovery Key',
+    'settings_key_desc': 'Your key to restore this identity on any device.',
+    'btn_view_key': 'View & Download Key',
+    'settings_data': '🗑 Data',
+    'settings_data_desc': 'Clear local storage to remove everything.',
+    'btn_clear': '⚠ Clear All Local Data',
+
+    // Security badges
+    'badge_security': '🔒 E2E Encrypted · Zero Logs',
+    'badge_anon': 'Anonymous · Encrypted',
+
+    // Toast messages
+    'toast_posted': 'Posted anonymously ✓',
+    'toast_restored': 'Identity restored!',
+    'toast_key_copied': 'Key copied!',
+    'toast_report': 'Report submitted anonymously ✓',
+  },
+
+  hi: {
+    // Navigation
+    'nav_home': 'होम',
+    'nav_rooms': 'रूम्स',
+    'nav_ask': 'समुदाय से पूछें',
+    'nav_code': 'कोडस्पेस',
+    'nav_games': 'गेमिंग ज़ोन',
+    'nav_settings': 'सेटिंग्स',
+    'nav_identity': 'नई पहचान',
+
+    // Topbar
+    'btn_mykey': '🔑 मेरी चाबी',
+    'btn_exit': '← बाहर',
+    'btn_lang': '🌐 English',
+
+    // Home panel
+    'home_sub': 'पूरी तरह गुमनाम। कोई IP लॉग नहीं। सर्वर पर कोई पहचान नहीं।',
+    'zone_rooms': 'रूम्स',
+    'zone_rooms_desc': 'निजी एन्क्रिप्टेड चैट रूम बनाएं या जॉइन करें',
+    'zone_ask': 'समुदाय से पूछें',
+    'zone_ask_desc': 'गुमनाम रूप से समस्या पोस्ट करें, असली समाधान पाएं',
+    'zone_code': 'कोडस्पेस',
+    'zone_code_desc': 'ब्राउज़र में कोड लिखें, चलाएं और शेयर करें',
+    'zone_games': 'गेमिंग ज़ोन',
+    'zone_games_desc': 'गुमनाम मल्टीप्लेयर ब्राउज़र गेम्स',
+    'zone_random': 'रैंडम चैट',
+    'zone_random_desc': 'किसी अजनबी से गुमनाम रूप से मिलें',
+    'zone_trending': 'ट्रेंडिंग',
+    'zone_trending_desc': 'देखें समुदाय क्या बात कर रहा है',
+    'security_e2e': '🔒 E2E एन्क्रिप्शन: चालू',
+    'security_ip': '🛡 IP मास्किंग: चालू',
+    'security_cookie': '📵 कोई कुकीज़ नहीं: चालू',
+    'security_delete': '🗑 ऑटो-डिलीट: चालू',
+
+    // Rooms
+    'rooms_title': 'रूम जॉइन करें या बनाएं',
+    'room_type_label': 'रूम टाइप',
+    'room_placeholder': '6-अंकीय रूम कोड दर्ज करें',
+    'btn_join': 'रूम जॉइन करें',
+    'btn_create': '+ रूम बनाएं',
+
+    // Problems
+    'post_label': 'गुमनाम रूप से पोस्ट करें',
+    'post_placeholder': 'अपनी समस्या खुलकर बताएं। कोई नहीं जानता आप कौन हैं...',
+    'btn_post': 'समस्या पोस्ट करें →',
+    'cat_general': 'सामान्य',
+    'cat_mental': 'मानसिक स्वास्थ्य',
+    'cat_relations': 'रिश्ते',
+    'cat_finance': 'वित्त',
+    'cat_career': 'करियर',
+    'cat_tech': 'तकनीक',
+    'cat_studies': 'पढ़ाई',
+
+    // Chat
+    'chat_placeholder': 'संदेश टाइप करें...',
+    'btn_back': '← वापस',
+
+    // Settings
+    'settings_title': 'सेटिंग्स',
+    'settings_identity': '🎭 पहचान',
+    'settings_identity_desc': 'आपका गुमनाम कोडनेम और अवतार।',
+    'btn_regenerate': '🎲 नई पहचान बनाएं',
+    'settings_key': '🔑 रिकवरी चाबी',
+    'settings_key_desc': 'किसी भी डिवाइस पर पहचान बहाल करने की चाबी।',
+    'btn_view_key': 'चाबी देखें और डाउनलोड करें',
+    'settings_data': '🗑 डेटा',
+    'settings_data_desc': 'सब कुछ हटाने के लिए लोकल स्टोरेज साफ़ करें।',
+    'btn_clear': '⚠ सभी डेटा मिटाएं',
+
+    // Security badges
+    'badge_security': '🔒 E2E एन्क्रिप्टेड · शून्य लॉग',
+    'badge_anon': 'गुमनाम · एन्क्रिप्टेड',
+
+    // Toast messages
+    'toast_posted': 'गुमनाम रूप से पोस्ट हुआ ✓',
+    'toast_restored': 'पहचान बहाल हुई!',
+    'toast_key_copied': 'चाबी कॉपी हुई!',
+    'toast_report': 'रिपोर्ट गुमनाम रूप से जमा हुई ✓',
+  },
+
+  ur: {
+    // Navigation
+    'nav_home': 'ہوم',
+    'nav_rooms': 'رومز',
+    'nav_ask': 'کمیونٹی سے پوچھیں',
+    'nav_code': 'کوڈ اسپیس',
+    'nav_games': 'گیمنگ زون',
+    'nav_settings': 'ترتیبات',
+    'nav_identity': 'نئی شناخت',
+
+    // Topbar
+    'btn_mykey': '🔑 میری چابی',
+    'btn_exit': '← باہر',
+    'btn_lang': '🌐 English',
+
+    // Home panel
+    'home_sub': 'مکمل گمنام۔ کوئی IP لاگ نہیں۔ سرور پر کوئی شناخت نہیں۔',
+    'zone_rooms': 'رومز',
+    'zone_rooms_desc': 'نجی خفیہ کردہ چیٹ رومز بنائیں یا شامل ہوں',
+    'zone_ask': 'کمیونٹی سے پوچھیں',
+    'zone_ask_desc': 'گمنام طور پر مسئلہ پوسٹ کریں، حقیقی حل پائیں',
+    'zone_code': 'کوڈ اسپیس',
+    'zone_code_desc': 'براؤزر میں کوڈ لکھیں، چلائیں اور شیئر کریں',
+    'zone_games': 'گیمنگ زون',
+    'zone_games_desc': 'گمنام ملٹی پلیئر براؤزر گیمز',
+    'zone_random': 'رینڈم چیٹ',
+    'zone_random_desc': 'کسی اجنبی سے گمنام طور پر ملیں',
+    'zone_trending': 'ٹرینڈنگ',
+    'zone_trending_desc': 'دیکھیں کمیونٹی کیا بات کر رہی ہے',
+    'security_e2e': '🔒 E2E خفیہ کاری: چالو',
+    'security_ip': '🛡 IP ماسکنگ: چالو',
+    'security_cookie': '📵 کوئی کوکیز نہیں: چالو',
+    'security_delete': '🗑 خودکار حذف: چالو',
+
+    // Rooms
+    'rooms_title': 'روم شامل ہوں یا بنائیں',
+    'room_type_label': 'روم ٹائپ',
+    'room_placeholder': '6 ہندسہ روم کوڈ درج کریں',
+    'btn_join': 'روم شامل ہوں',
+    'btn_create': '+ روم بنائیں',
+
+    // Problems
+    'post_label': 'گمنام طور پر پوسٹ کریں',
+    'post_placeholder': 'اپنا مسئلہ کھل کر بیان کریں۔ کوئی نہیں جانتا آپ کون ہیں...',
+    'btn_post': 'مسئلہ پوسٹ کریں →',
+    'cat_general': 'عام',
+    'cat_mental': 'ذہنی صحت',
+    'cat_relations': 'تعلقات',
+    'cat_finance': 'مالیات',
+    'cat_career': 'کیریئر',
+    'cat_tech': 'ٹیکنالوجی',
+    'cat_studies': 'تعلیم',
+
+    // Chat
+    'chat_placeholder': 'پیغام ٹائپ کریں...',
+    'btn_back': '← واپس',
+
+    // Settings
+    'settings_title': 'ترتیبات',
+    'settings_identity': '🎭 شناخت',
+    'settings_identity_desc': 'آپ کا گمنام کوڈ نام اور اوتار۔',
+    'btn_regenerate': '🎲 نئی شناخت بنائیں',
+    'settings_key': '🔑 ریکوری چابی',
+    'settings_key_desc': 'کسی بھی ڈیوائس پر شناخت بحال کرنے کی چابی۔',
+    'btn_view_key': 'چابی دیکھیں اور ڈاؤن لوڈ کریں',
+    'settings_data': '🗑 ڈیٹا',
+    'settings_data_desc': 'سب کچھ ہٹانے کے لیے لوکل اسٹوریج صاف کریں۔',
+    'btn_clear': '⚠ تمام ڈیٹا مٹائیں',
+
+    // Security badges
+    'badge_security': '🔒 E2E خفیہ کردہ · صفر لاگز',
+    'badge_anon': 'گمنام · خفیہ کردہ',
+
+    // Toast messages
+    'toast_posted': 'گمنام طور پر پوسٹ ہوا ✓',
+    'toast_restored': 'شناخت بحال ہوئی!',
+    'toast_key_copied': 'چابی کاپی ہوئی!',
+    'toast_report': 'رپورٹ گمنام طور پر جمع ہوئی ✓',
+  }
+};
+
+// ── Get translation ──────────────────────────
+function t(key) {
+  return (TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang][key])
+    || TRANSLATIONS['en'][key]
+    || key;
+}
+
+// ── Toggle language cycle: en → hi → ur → en ─
+function toggleLanguage() {
+  const langs = ['en', 'hi', 'ur'];
+  const nextIndex = (langs.indexOf(currentLang) + 1) % langs.length;
+  currentLang = langs[nextIndex];
+  localStorage.setItem('veilx_lang', currentLang);
+  applyLanguage();
+
+  const names = { en: 'English', hi: 'हिंदी', ur: 'اردو' };
+  showToast('Language: ' + names[currentLang], 'success');
+}
+
+// ── Apply all translations to UI ─────────────
+function applyLanguage() {
+  const isRTL = currentLang === 'ur';
+
+  // RTL support for Urdu
+  document.body.dir = isRTL ? 'rtl' : 'ltr';
+  document.body.style.textAlign = isRTL ? 'right' : 'left';
+
+  // Update lang button
+  const langBtn = document.getElementById('lang-btn');
+  if (langBtn) langBtn.textContent = t('btn_lang');
+
+  // Navigation items
+  const navItems = document.querySelectorAll('.nav-item');
+  const navKeys = ['nav_home','nav_rooms','nav_ask','nav_code','nav_games','nav_settings','nav_identity'];
+  navItems.forEach(function(item, i) {
+    if (navKeys[i]) {
+      const icon = item.querySelector('.nav-icon');
+      const iconText = icon ? icon.outerHTML : '';
+      item.innerHTML = iconText + ' ' + t(navKeys[i]);
+      if (icon) item.insertBefore(icon, item.firstChild);
+    }
+  });
+
+  // Security badge
+  const badge = document.querySelector('.security-badge');
+  if (badge) badge.textContent = t('badge_security');
+
+  // Anonymous status
+  const anonStatus = document.querySelector('.sidebar-status');
+  if (anonStatus) {
+    anonStatus.innerHTML = '<span class="status-dot"></span>' + t('badge_anon');
+  }
+
+  // Home panel welcome sub
+  const homeSub = document.querySelector('.welcome-sub');
+  if (homeSub) homeSub.textContent = t('home_sub');
+
+  // Zone cards
+  const zoneNames = document.querySelectorAll('.zone-name');
+  const zoneDescs = document.querySelectorAll('.zone-desc');
+  const zoneNameKeys = ['zone_rooms','zone_ask','zone_code','zone_games','zone_random','zone_trending'];
+  const zoneDescKeys = ['zone_rooms_desc','zone_ask_desc','zone_code_desc','zone_games_desc','zone_random_desc','zone_trending_desc'];
+
+  zoneNames.forEach(function(el, i) {
+    if (zoneNameKeys[i]) el.textContent = t(zoneNameKeys[i]);
+  });
+  zoneDescs.forEach(function(el, i) {
+    if (zoneDescKeys[i]) el.textContent = t(zoneDescKeys[i]);
+  });
+
+  // Security status badges
+  const secBadges = document.querySelectorAll('[data-i18n]');
+  secBadges.forEach(function(el) {
+    const key = el.getAttribute('data-i18n');
+    if (key) el.textContent = t(key);
+  });
+
+  // Rooms panel
+  const roomsTitle = document.querySelector('#panel-rooms > div:first-child');
+  if (roomsTitle) roomsTitle.textContent = t('rooms_title');
+
+  const roomInput = document.getElementById('room-code-input');
+  if (roomInput) roomInput.placeholder = t('room_placeholder');
+
+  // Problems textarea
+  const problemInput = document.getElementById('problem-input');
+  if (problemInput) problemInput.placeholder = t('post_placeholder');
+
+  // Chat input
+  const chatInput = document.getElementById('chat-input');
+  if (chatInput) chatInput.placeholder = t('chat_placeholder');
+
+  // Category chips
+  const chips = document.querySelectorAll('.chip');
+  const chipKeys = ['cat_general','cat_mental','cat_relations','cat_finance','cat_career','cat_tech','cat_studies'];
+  chips.forEach(function(chip, i) {
+    if (chipKeys[i]) chip.textContent = t(chipKeys[i]);
+  });
+
+  // Settings panel
+  const settingsTitle = document.querySelector('#panel-settings > div:first-child');
+  if (settingsTitle) settingsTitle.textContent = t('settings_title');
+
+  // Bottom nav
+  const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
+  const bottomNavKeys = ['nav_home','nav_rooms','nav_ask','nav_code','nav_games'];
+  bottomNavItems.forEach(function(item, i) {
+    if (bottomNavKeys[i]) {
+      const icon = item.querySelector('.bottom-nav-icon');
+      const iconHtml = icon ? icon.outerHTML : '';
+      item.innerHTML = iconHtml + t(bottomNavKeys[i]);
+    }
+  });
+}
+
+// ── Apply language on load ───────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  if (currentLang !== 'en') {
+    applyLanguage();
+  }
+});
 </script>
 
 </body>
