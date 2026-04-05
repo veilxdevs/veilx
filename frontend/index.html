@@ -646,7 +646,7 @@ function renderMessages() {
     if (m.type === 'system') return '<div class="system-msg">'+m.text+'</div>';
     var own = m.sender === identity.codename;
     var reportBtn = !own ? '<div style="text-align:right;margin-top:3px"><button onclick="openReport(\'message\',\''+m.sender+'\')" style="background:transparent;border:none;cursor:pointer;font-size:0.6rem;color:var(--muted);font-family:var(--mono)">⚑ report</button></div>' : '';
-    return '<div class="message '+(own?'own')+'">' +
+    return '<div class="message '+(own?'own':'') + '">' +
       '<div class="msg-avatar">'+m.avatar+'</div>' +
       '<div class="msg-body">' +
         '<div class="msg-meta"><span class="msg-name">'+m.sender+'</span><span>'+m.time+'</span></div>' +

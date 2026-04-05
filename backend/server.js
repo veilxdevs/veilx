@@ -139,16 +139,17 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-      connectSrc: ["'self'", 'ws:', 'wss:'],
+      connectSrc: ["'self'", 'ws:', 'wss:', 'https://api.anthropic.com'],
       imgSrc: ["'self'", 'data:'],
     }
   },
   hidePoweredBy: true,
   frameguard: { action: 'deny' },
   referrerPolicy: { policy: 'no-referrer' }
-}));
+}));4
 
 app.disable('x-powered-by');
 
