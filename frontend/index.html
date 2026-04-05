@@ -338,6 +338,26 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
         </div>
       </div>
 
+      <!-- Voice Room Section -->
+<div id="voice-section" style="margin-bottom:1.5rem">
+  <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.75rem">🎙️ VOICE ROOMS</div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem">
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+      <div id="voice-status" style="width:10px;height:10px;border-radius:50%;background:var(--muted);flex-shrink:0"></div>
+      <div>
+        <div style="font-size:0.85rem;font-weight:800" id="voice-status-text">Not in voice</div>
+        <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)" id="voice-peers-text">Join a room to start talking</div>
+      </div>
+      <button id="voice-mute-btn" onclick="toggleMute()" style="display:none;margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.75rem;color:var(--muted);font-family:var(--mono);font-size:0.7rem;cursor:pointer">🎙 Muted</button>
+    </div>
+    <div style="display:flex;gap:0.5rem">
+      <button class="btn-sm btn-accent" onclick="joinVoiceRoom()" id="voice-join-btn">🎙️ Join Voice</button>
+      <button class="btn-sm btn-outline" onclick="leaveVoiceRoom()" id="voice-leave-btn" style="display:none">📵 Leave Voice</button>
+    </div>
+    <div id="voice-peers-list" style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap"></div>
+  </div>
+</div>
+
       <!-- PROBLEMS -->
       <div class="panel" id="panel-problems">
         <div class="post-box">
@@ -965,6 +985,303 @@ function escHtml(s) {
 function fixMobileHeight() { document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01)+'px'); }
 fixMobileHeight();
 window.addEventListener('resize', fixMobileHeight);
+
+// ════════════════════════════════════════════
+// VEILX Phase 3 Step 1 — Voice Rooms JS
+// WebRTC peer-to-peer — server never hears audio
+// ════════════════════════════════════════════
+
+let localStream = null;
+let peerConnections = {};
+let inVoiceRoom = false;
+let voiceRoomCode = null;
+let isMuted = false;
+let voicePeers = [];
+
+// ICE servers for WebRTC connection
+const ICE_SERVERS = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' }
+  ]
+};
+
+// ── Join Voice Room ──────────────────────────
+async function joinVoiceRoom() {
+  if (!currentRoom) {
+    showToast('Join a chat room first', 'error');
+    return;
+  }
+
+  if (inVoiceRoom) {
+    showToast('Already in voice room', 'error');
+    return;
+  }
+
+  try {
+    // Request microphone access
+    localStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        sampleRate: 44100
+      },
+      video: false
+    });
+
+    inVoiceRoom = true;
+    voiceRoomCode = currentRoom.code;
+    isMuted = false;
+
+    // Update UI
+    updateVoiceUI(true);
+    showToast('🎙️ Joined voice room!', 'success');
+    addSystemMsg('🎙️ You joined the voice room — speak freely');
+
+    // Tell server we joined
+    if (window._socket) {
+      window._socket.emit('voice_join', { code: voiceRoomCode });
+    }
+
+  } catch (err) {
+    if (err.name === 'NotAllowedError') {
+      showToast('Microphone permission denied', 'error');
+    } else if (err.name === 'NotFoundError') {
+      showToast('No microphone found', 'error');
+    } else {
+      showToast('Could not access microphone', 'error');
+    }
+  }
+}
+
+// ── Leave Voice Room ─────────────────────────
+function leaveVoiceRoom() {
+  if (!inVoiceRoom) return;
+
+  // Stop all tracks
+  if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+    localStream = null;
+  }
+
+  // Close all peer connections
+  Object.values(peerConnections).forEach(pc => pc.close());
+  peerConnections = {};
+  voicePeers = [];
+
+  // Tell server we left
+  if (window._socket && voiceRoomCode) {
+    window._socket.emit('voice_leave', { code: voiceRoomCode });
+  }
+
+  inVoiceRoom = false;
+  voiceRoomCode = null;
+  isMuted = false;
+
+  updateVoiceUI(false);
+  showToast('Left voice room', 'success');
+  addSystemMsg('📵 You left the voice room');
+}
+
+// ── Toggle Mute ──────────────────────────────
+function toggleMute() {
+  if (!localStream) return;
+
+  isMuted = !isMuted;
+  localStream.getAudioTracks().forEach(track => {
+    track.enabled = !isMuted;
+  });
+
+  const btn = document.getElementById('voice-mute-btn');
+  if (btn) {
+    btn.textContent = isMuted ? '🔇 Unmute' : '🎙 Mute';
+    btn.style.color = isMuted ? 'var(--danger)' : 'var(--muted)';
+    btn.style.borderColor = isMuted ? 'var(--danger)' : 'var(--border)';
+  }
+
+  showToast(isMuted ? '🔇 Muted' : '🎙️ Unmuted', 'success');
+}
+
+// ── Update Voice UI ──────────────────────────
+function updateVoiceUI(active) {
+  const statusDot = document.getElementById('voice-status');
+  const statusText = document.getElementById('voice-status-text');
+  const peersText = document.getElementById('voice-peers-text');
+  const joinBtn = document.getElementById('voice-join-btn');
+  const leaveBtn = document.getElementById('voice-leave-btn');
+  const muteBtn = document.getElementById('voice-mute-btn');
+
+  if (!statusDot) return;
+
+  if (active) {
+    statusDot.style.background = 'var(--success)';
+    statusDot.style.animation = 'pulse 1s infinite';
+    statusText.textContent = 'In voice room';
+    peersText.textContent = Object.keys(peerConnections).length + ' others connected';
+    joinBtn.style.display = 'none';
+    leaveBtn.style.display = 'block';
+    muteBtn.style.display = 'block';
+    muteBtn.textContent = '🎙 Mute';
+  } else {
+    statusDot.style.background = 'var(--muted)';
+    statusDot.style.animation = 'none';
+    statusText.textContent = 'Not in voice';
+    peersText.textContent = 'Join a room to start talking';
+    joinBtn.style.display = 'block';
+    leaveBtn.style.display = 'none';
+    muteBtn.style.display = 'none';
+    document.getElementById('voice-peers-list').innerHTML = '';
+  }
+}
+
+// ── Create Peer Connection ───────────────────
+async function createPeerConnection(peerId, isInitiator) {
+  const pc = new RTCPeerConnection(ICE_SERVERS);
+  peerConnections[peerId] = pc;
+
+  // Add local audio stream
+  if (localStream) {
+    localStream.getTracks().forEach(track => {
+      pc.addTrack(track, localStream);
+    });
+  }
+
+  // Handle incoming audio
+  pc.ontrack = (event) => {
+    const audio = new Audio();
+    audio.srcObject = event.streams[0];
+    audio.autoplay = true;
+    audio.id = 'audio-' + peerId;
+    // Remove old audio element if exists
+    const old = document.getElementById('audio-' + peerId);
+    if (old) old.remove();
+    document.body.appendChild(audio);
+    updatePeersList();
+  };
+
+  // Handle ICE candidates
+  pc.onicecandidate = (event) => {
+    if (event.candidate && window._socket) {
+      window._socket.emit('voice_ice', {
+        targetId: peerId,
+        candidate: event.candidate
+      });
+    }
+  };
+
+  // Handle connection state
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === 'disconnected' ||
+        pc.connectionState === 'failed') {
+      closePeerConnection(peerId);
+    }
+  };
+
+  // If initiator, create and send offer
+  if (isInitiator) {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    if (window._socket) {
+      window._socket.emit('voice_offer', {
+        targetId: peerId,
+        offer: pc.localDescription
+      });
+    }
+  }
+
+  return pc;
+}
+
+// ── Close Peer Connection ────────────────────
+function closePeerConnection(peerId) {
+  if (peerConnections[peerId]) {
+    peerConnections[peerId].close();
+    delete peerConnections[peerId];
+  }
+  const audio = document.getElementById('audio-' + peerId);
+  if (audio) audio.remove();
+  voicePeers = voicePeers.filter(id => id !== peerId);
+  updatePeersList();
+  updateVoiceUI(inVoiceRoom);
+}
+
+// ── Update Peers List UI ─────────────────────
+function updatePeersList() {
+  const list = document.getElementById('voice-peers-list');
+  if (!list) return;
+  const count = Object.keys(peerConnections).length;
+  list.innerHTML = count === 0
+    ? '<div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)">Waiting for others to join...</div>'
+    : Array.from({length: count}, (_, i) =>
+        '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:0.2rem 0.75rem;font-family:var(--mono);font-size:0.65rem;color:var(--success)">🎙 Peer '+(i+1)+'</div>'
+      ).join('');
+
+  const peersText = document.getElementById('voice-peers-text');
+  if (peersText) peersText.textContent = count + ' others connected';
+}
+
+// ── Socket Voice Event Handlers ──────────────
+// These connect when socket is available
+function initVoiceSocketHandlers(socket) {
+
+  // New peer joined — we initiate connection
+  socket.on('voice_peer_joined', async ({ peerId }) => {
+    if (!inVoiceRoom) return;
+    voicePeers.push(peerId);
+    await createPeerConnection(peerId, true);
+    updateVoiceUI(true);
+    showToast('🎙 Someone joined voice', 'success');
+  });
+
+  // We joined — connect to existing peers
+  socket.on('voice_existing_peers', async ({ peers }) => {
+    if (!inVoiceRoom) return;
+    for (const peerId of peers) {
+      voicePeers.push(peerId);
+      await createPeerConnection(peerId, false);
+    }
+    updateVoiceUI(true);
+  });
+
+  // Received offer from peer
+  socket.on('voice_offer', async ({ fromId, offer }) => {
+    if (!inVoiceRoom) return;
+    let pc = peerConnections[fromId];
+    if (!pc) pc = await createPeerConnection(fromId, false);
+    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    socket.emit('voice_answer', { targetId: fromId, answer: pc.localDescription });
+  });
+
+  // Received answer from peer
+  socket.on('voice_answer', async ({ fromId, answer }) => {
+    const pc = peerConnections[fromId];
+    if (pc) await pc.setRemoteDescription(new RTCSessionDescription(answer));
+  });
+
+  // Received ICE candidate
+  socket.on('voice_ice', async ({ fromId, candidate }) => {
+    const pc = peerConnections[fromId];
+    if (pc) {
+      try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch(e) {}
+    }
+  });
+
+  // Peer left voice
+  socket.on('voice_peer_left', ({ peerId }) => {
+    closePeerConnection(peerId);
+    showToast('Someone left voice', 'success');
+  });
+}
+
+// ── Auto-leave voice when leaving chat room ──
+const _leaveRoomOriginal = window.leaveRoom || leaveRoom;
+window.leaveRoom = function() {
+  if (inVoiceRoom) leaveVoiceRoom();
+  _leaveRoomOriginal();
+};
 </script>
+
 </body>
 </html>

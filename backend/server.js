@@ -221,6 +221,60 @@ setInterval(() => {
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
+// ════════════════════════════════════════════
+// VEILX Phase 3 Step 1 — Voice Room Signaling
+// Add this block after /api/health route
+// WebRTC signaling — server never hears audio
+// ════════════════════════════════════════════
+
+// Active voice rooms — in memory only
+const voiceRooms = new Map();
+// Structure: roomCode -> { peers: Set of socketIds, created }
+
+// Join a voice room
+app.post('/api/voice/join', (req, res) => {
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ error: 'Room code required' });
+
+  const roomCode = code.toUpperCase().substring(0, 6);
+
+  if (!voiceRooms.has(roomCode)) {
+    voiceRooms.set(roomCode, {
+      peers: new Set(),
+      created: Date.now()
+    });
+  }
+
+  const room = voiceRooms.get(roomCode);
+
+  // Max 10 people per voice room
+  if (room.peers.size >= 10) {
+    return res.status(400).json({ error: 'Voice room is full (max 10)' });
+  }
+
+  res.json({
+    success: true,
+    peerCount: room.peers.size
+  });
+});
+
+// Get peers in a voice room
+app.get('/api/voice/:code/peers', (req, res) => {
+  const code = req.params.code.toUpperCase();
+  const room = voiceRooms.get(code);
+  if (!room) return res.json({ peers: 0 });
+  res.json({ peers: room.peers.size });
+});
+
+// Auto-cleanup empty voice rooms after 2 hours
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, room] of voiceRooms.entries()) {
+    if (now - room.created > 2 * 60 * 60 * 1000) {
+      voiceRooms.delete(code);
+    }
+  }
+}, 30 * 60 * 1000);
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
@@ -417,6 +471,52 @@ io.on('connection', (socket) => {
     const token = getRoomToken(code.toUpperCase());
     socket.emit('room_token', { token });
   });
+  // ── Phase 3: WebRTC Voice Signaling ──────────
+// Server only passes signals — never touches audio
+
+socket.on('voice_join', ({ code }) => {
+  const voiceRoom = 'voice_' + code.toUpperCase();
+  socket.join(voiceRoom);
+
+  // Tell existing peers about new user
+  socket.to(voiceRoom).emit('voice_peer_joined', {
+    peerId: socket.id
+  });
+
+  // Tell new user about existing peers
+  const room = io.sockets.adapter.rooms.get(voiceRoom);
+  const peers = room ? [...room].filter(id => id !== socket.id) : [];
+  socket.emit('voice_existing_peers', { peers });
+});
+
+socket.on('voice_offer', ({ targetId, offer }) => {
+  io.to(targetId).emit('voice_offer', {
+    fromId: socket.id,
+    offer
+  });
+});
+
+socket.on('voice_answer', ({ targetId, answer }) => {
+  io.to(targetId).emit('voice_answer', {
+    fromId: socket.id,
+    answer
+  });
+});
+
+socket.on('voice_ice', ({ targetId, candidate }) => {
+  io.to(targetId).emit('voice_ice', {
+    fromId: socket.id,
+    candidate
+  });
+});
+
+socket.on('voice_leave', ({ code }) => {
+  const voiceRoom = 'voice_' + code.toUpperCase();
+  socket.leave(voiceRoom);
+  socket.to(voiceRoom).emit('voice_peer_left', {
+    peerId: socket.id
+  });
+});
 
   socket.on('disconnect', () => {
     cleanupSocket(socket.id);
