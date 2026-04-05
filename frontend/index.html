@@ -814,7 +814,7 @@ function runCode() {
   localStorage.setItem('veilx_code', code);
   const frame = document.getElementById('code-preview');
   var html = code;
-  if (lang === 'js') html = '<script>' + code + '<\/script>';
+  if (lang === 'js') html = '<scr'+'ipt>' + code + '<'+'/scr'+'ipt>';
   if (lang === 'css') html = '<style>' + code + '</style><div class="box"></div>';
   frame.srcdoc = html;
   showToast('Running... ▶','success');
