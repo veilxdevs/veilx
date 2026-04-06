@@ -81,8 +81,11 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
 } 
 .topbar { padding:1rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--surface); flex-shrink:0; }
 .topbar-title { font-size:1.1rem; font-weight:800; }
-.topbar-actions { display:flex; gap:0.5rem; }
-.icon-btn { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:0.5rem 0.75rem; cursor:pointer; color:var(--muted); font-size:0.8rem; font-family:var(--display); font-weight:600; transition:all 0.15s; }
+.topbar-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}.icon-btn { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:0.5rem 0.75rem; cursor:pointer; color:var(--muted); font-size:0.8rem; font-family:var(--display); font-weight:600; transition:all 0.15s; }
 .icon-btn:hover { color:var(--text); border-color:var(--accent); }
 .content-area {
   flex: 1;
@@ -97,7 +100,7 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
   background: linear-gradient(135deg, rgba(123,111,255,0.15), rgba(255,107,157,0.1));
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 2rem;
+  padding: 1.5rem;
   margin-bottom: 1.5rem;
   position: relative;
   overflow: hidden;
@@ -208,7 +211,17 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
   .grid-3 { grid-template-columns:1fr; }
   .editor-area { grid-template-columns:1fr; }
   .code-pane { border-right:none; border-bottom:1px solid var(--border); }
-  .topbar { padding:0.75rem 1rem; }
+  .topbar {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  flex-shrink: 0;
+  min-width: 0;
+  overflow: hidden;
+}
   .content-area { padding:1rem; }
   .rooms-header { flex-direction:column; }
   .rooms-header .room-input,.rooms-header .btn-sm { width:100%; }
