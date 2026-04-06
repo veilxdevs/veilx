@@ -268,7 +268,10 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
         <div class="sidebar-status"><span class="status-dot"></span>Anonymous · Encrypted</div>
       </div>
     </div>
-    <div class="sidebar-section">Navigate</div>
+    <div class="nav-item" onclick="switchPanel('chatbot',this)">
+  <span class="nav-icon">🤖</span> VEX Assistant
+</div>  
+    <div class="sidebar-section">Account</div>
     <div class="nav-item active" onclick="switchPanel('home',this)"><span class="nav-icon">🏠</span> Home</div>
     <div class="nav-item" onclick="switchPanel('rooms',this)"><span class="nav-icon">🚪</span> Rooms</div>
     <div class="nav-item" onclick="switchPanel('problems',this)"><span class="nav-icon">🆘</span> Ask Community</div>
@@ -661,7 +664,171 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
   </div>
 
 </div>
+       <!-- ═══════════════════ CHATBOT PANEL ═══════════════════ -->
+<div class="panel" id="panel-chatbot">
 
+  <!-- Header -->
+  <div style="
+    background:linear-gradient(135deg,rgba(123,111,255,0.15),rgba(255,107,157,0.1));
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:1.25rem;
+    margin-bottom:1.25rem;
+    display:flex;
+    align-items:center;
+    gap:1rem
+  ">
+    <div style="
+      width:48px;height:48px;
+      border-radius:50%;
+      background:linear-gradient(135deg,var(--accent),#5a4fff);
+      display:flex;align-items:center;
+      justify-content:center;
+      font-size:1.5rem;
+      flex-shrink:0
+    ">🤖</div>
+    <div>
+      <div style="font-size:1rem;font-weight:800">VEX — Anonymous AI</div>
+      <div style="font-family:var(--mono);font-size:0.65rem;color:var(--success)">
+        <span class="status-dot"></span>Online · No logs · Fully private
+      </div>
+    </div>
+    <div style="margin-left:auto">
+      <button onclick="clearChatbot()" style="
+        background:transparent;
+        border:1px solid var(--border);
+        border-radius:6px;
+        color:var(--muted);
+        font-family:var(--mono);
+        font-size:0.65rem;
+        padding:0.3rem 0.6rem;
+        cursor:pointer
+      ">✕ Clear</button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div id="chatbot-messages" style="
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:1rem;
+    height:400px;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    gap:0.75rem;
+    margin-bottom:1rem
+  ">
+    <!-- Welcome message -->
+    <div style="display:flex;gap:0.75rem;align-items:flex-start">
+      <div style="
+        width:32px;height:32px;
+        border-radius:50%;
+        background:linear-gradient(135deg,var(--accent),#5a4fff);
+        display:flex;align-items:center;
+        justify-content:center;
+        font-size:0.9rem;
+        flex-shrink:0
+      ">🤖</div>
+      <div style="
+        background:var(--surface2);
+        border:1px solid var(--border);
+        border-radius:0 12px 12px 12px;
+        padding:0.65rem 0.9rem;
+        font-size:0.875rem;
+        line-height:1.6;
+        max-width:80%
+      ">
+        Hey! I'm <strong>VEX</strong> — your anonymous AI assistant on VEILX. 👋<br><br>
+        I can help with advice, coding, writing, math, or just someone to talk to.
+        You're completely anonymous here — no tracking, no identity.<br><br>
+        What's on your mind?
+      </div>
+    </div>
+  </div>
+
+  <!-- Rate limit indicator -->
+  <div id="chatbot-rate" style="
+    font-family:var(--mono);
+    font-size:0.6rem;
+    color:var(--muted);
+    margin-bottom:0.5rem;
+    text-align:right
+  ">20 messages remaining this hour</div>
+
+  <!-- Input -->
+  <div style="display:flex;gap:0.75rem;align-items:flex-end">
+    <textarea
+      id="chatbot-input"
+      placeholder="Ask VEX anything..."
+      rows="1"
+      style="
+        flex:1;
+        background:var(--surface);
+        border:1px solid var(--border);
+        border-radius:12px;
+        padding:0.65rem 1.25rem;
+        color:var(--text);
+        font-family:var(--display);
+        font-size:0.875rem;
+        outline:none;
+        resize:none;
+        line-height:1.4;
+        transition:border-color 0.2s;
+        max-height:120px
+      "
+      oninput="autoResize(this)"
+      onkeydown="handleChatbotKey(event)"
+    ></textarea>
+    <button onclick="sendChatbotMessage()" style="
+      width:40px;height:40px;
+      border-radius:50%;
+      background:linear-gradient(135deg,var(--accent),#5a4fff);
+      border:none;cursor:pointer;
+      display:flex;align-items:center;
+      justify-content:center;
+      font-size:1rem;
+      flex-shrink:0;
+      transition:all 0.15s
+    ">➤</button>
+  </div>
+
+  <!-- Suggestion chips -->
+  <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.75rem">
+    <div onclick="askSuggestion('Help me with my code')"
+      style="padding:0.3rem 0.75rem;border-radius:20px;border:1px solid var(--border);font-size:0.7rem;font-family:var(--mono);cursor:pointer;color:var(--muted);transition:all 0.15s"
+      onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+      💻 Help with code
+    </div>
+    <div onclick="askSuggestion('I need some advice')"
+      style="padding:0.3rem 0.75rem;border-radius:20px;border:1px solid var(--border);font-size:0.7rem;font-family:var(--mono);cursor:pointer;color:var(--muted);transition:all 0.15s"
+      onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+      💡 Need advice
+    </div>
+    <div onclick="askSuggestion('I am feeling stressed')"
+      style="padding:0.3rem 0.75rem;border-radius:20px;border:1px solid var(--border);font-size:0.7rem;font-family:var(--mono);cursor:pointer;color:var(--muted);transition:all 0.15s"
+      onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+      💙 Feeling stressed
+    </div>
+    <div onclick="askSuggestion('Help me study for my exam')"
+      style="padding:0.3rem 0.75rem;border-radius:20px;border:1px solid var(--border);font-size:0.7rem;font-family:var(--mono);cursor:pointer;color:var(--muted);transition:all 0.15s"
+      onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+      📚 Study help
+    </div>
+    <div onclick="askSuggestion('Tell me something interesting')"
+      style="padding:0.3rem 0.75rem;border-radius:20px;border:1px solid var(--border);font-size:0.7rem;font-family:var(--mono);cursor:pointer;color:var(--muted);transition:all 0.15s"
+      onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+      onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+      🎲 Random fact
+    </div>
+  </div>
+
+</div>  
       <!-- SETTINGS -->
       <div class="panel" id="panel-settings">
         <div style="font-size:1.1rem;font-weight:800;margin-bottom:1.5rem">Settings</div>
@@ -2573,7 +2740,179 @@ window.switchPanel = function(name, navEl) {
     updatePremiumUI();
   }
 };
+// ════════════════════════════════════════════
+// VEILX Phase 4 Step 1 — AI Chatbot JS
+// ════════════════════════════════════════════
 
+let chatbotHistory = [];
+let chatbotSessionId = crypto.randomUUID
+  ? crypto.randomUUID()
+  : Math.random().toString(36).substring(2);
+let chatbotLoading = false;
+
+// ── Send Message ─────────────────────────────
+async function sendChatbotMessage() {
+  const input = document.getElementById('chatbot-input');
+  const text = input.value.trim();
+  if (!text || chatbotLoading) return;
+
+  // Add user message to UI
+  addChatbotMessage('user', text);
+  chatbotHistory.push({ role: 'user', content: text });
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Show typing indicator
+  chatbotLoading = true;
+  showChatbotTyping();
+
+  try {
+    const res = await fetch('/api/chatbot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        history: chatbotHistory.slice(-10),
+        sessionId: chatbotSessionId
+      })
+    });
+
+    const data = await res.json();
+    removeChatbotTyping();
+    chatbotLoading = false;
+
+    if (data.error) {
+      addChatbotMessage('assistant', '⚠️ ' + data.error);
+      return;
+    }
+
+    const reply = data.response;
+    addChatbotMessage('assistant', reply);
+    chatbotHistory.push({ role: 'assistant', content: reply });
+
+    // Update rate limit display
+    if (data.remaining !== undefined) {
+      const rateEl = document.getElementById('chatbot-rate');
+      if (rateEl) {
+        rateEl.textContent = data.remaining + ' messages remaining this hour';
+        rateEl.style.color = data.remaining < 5 ? 'var(--danger)' : 'var(--muted)';
+      }
+    }
+
+    // Safety check
+    if (checkForConcerningContent(text)) {
+      showSupportMessage();
+    }
+
+  } catch(err) {
+    removeChatbotTyping();
+    chatbotLoading = false;
+    addChatbotMessage('assistant', "I'm having trouble connecting right now. Please try again in a moment. 🔄");
+  }
+}
+
+// ── Add Message to UI ────────────────────────
+function addChatbotMessage(role, text) {
+  const container = document.getElementById('chatbot-messages');
+  if (!container) return;
+
+  var isUser = role === 'user';
+  var div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:0.75rem;align-items:flex-start;' +
+    (isUser ? 'flex-direction:row-reverse;' : '');
+
+  div.innerHTML =
+    '<div style="width:32px;height:32px;border-radius:50%;' +
+      (isUser
+        ? 'background:rgba(123,111,255,0.2);border:1px solid var(--border);'
+        : 'background:linear-gradient(135deg,var(--accent),#5a4fff);') +
+      'display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0">' +
+      (isUser ? identity.emoji : '🤖') +
+    '</div>' +
+    '<div style="' +
+      'background:' + (isUser ? 'rgba(123,111,255,0.15)' : 'var(--surface2)') + ';' +
+      'border:1px solid ' + (isUser ? 'rgba(123,111,255,0.3)' : 'var(--border)') + ';' +
+      'border-radius:' + (isUser ? '12px 0 12px 12px' : '0 12px 12px 12px') + ';' +
+      'padding:0.65rem 0.9rem;' +
+      'font-size:0.875rem;' +
+      'line-height:1.6;' +
+      'max-width:80%;' +
+      'white-space:pre-wrap;' +
+      'word-break:break-word' +
+    '">' + escHtml(text) + '</div>';
+
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+// ── Typing Indicator ─────────────────────────
+function showChatbotTyping() {
+  const container = document.getElementById('chatbot-messages');
+  if (!container) return;
+
+  var div = document.createElement('div');
+  div.id = 'chatbot-typing';
+  div.style.cssText = 'display:flex;gap:0.75rem;align-items:flex-start';
+  div.innerHTML =
+    '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#5a4fff);display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0">🤖</div>' +
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:0 12px 12px 12px;padding:0.65rem 0.9rem;display:flex;align-items:center;gap:0.3rem">' +
+      '<span style="width:6px;height:6px;border-radius:50%;background:var(--muted);animation:pulse 1s infinite"></span>' +
+      '<span style="width:6px;height:6px;border-radius:50%;background:var(--muted);animation:pulse 1s infinite 0.2s"></span>' +
+      '<span style="width:6px;height:6px;border-radius:50%;background:var(--muted);animation:pulse 1s infinite 0.4s"></span>' +
+    '</div>';
+
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeChatbotTyping() {
+  const typing = document.getElementById('chatbot-typing');
+  if (typing) typing.remove();
+}
+
+// ── Clear Chat ───────────────────────────────
+function clearChatbot() {
+  chatbotHistory = [];
+  const container = document.getElementById('chatbot-messages');
+  if (!container) return;
+
+  container.innerHTML =
+    '<div style="display:flex;gap:0.75rem;align-items:flex-start">' +
+      '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#5a4fff);display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0">🤖</div>' +
+      '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:0 12px 12px 12px;padding:0.65rem 0.9rem;font-size:0.875rem;line-height:1.6;max-width:80%">' +
+        'Fresh start! What\'s on your mind? I\'m here to help — anonymously. 🔒' +
+      '</div>' +
+    '</div>';
+
+  showToast('Chat cleared', 'success');
+}
+
+// ── Suggestion chips ─────────────────────────
+function askSuggestion(text) {
+  const input = document.getElementById('chatbot-input');
+  if (input) { input.value = text; }
+  sendChatbotMessage();
+}
+
+// ── Keyboard handler ─────────────────────────
+function handleChatbotKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChatbotMessage();
+  }
+}
+
+// ── Add chatbot to switchPanel titles ────────
+const _switchPanelP4 = window.switchPanel || switchPanel;
+window.switchPanel = function(name, navEl) {
+  _switchPanelP4(name, navEl);
+  if (name === 'chatbot') {
+    document.getElementById('topbar-title').textContent = '🤖 VEX Assistant';
+  }
+};
+
+// ── Also add to bottom nav on mobile ─────────
+// Optional: replace one of the bottom nav items with chatbot
 </script>
 
 </body>

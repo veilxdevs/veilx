@@ -223,6 +223,155 @@ setInterval(() => {
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
+
+// ════════════════════════════════════════════
+// VEILX Phase 4 Step 1 — AI Chatbot
+// Add this block after /api/health route
+// Personal anonymous AI assistant
+// ════════════════════════════════════════════
+
+// Rate limit chatbot — max 20 messages per hour per session
+const chatbotRateLimit = new Map();
+
+app.post('/api/chatbot', async (req, res) => {
+  const { message, history, sessionId } = req.body;
+
+  if (!message || typeof message !== 'string') {
+    return res.status(400).json({ error: 'Message required' });
+  }
+
+  // Rate limiting per session
+  const sessionKey = sessionId
+    ? sessionId.substring(0, 32)
+    : crypto.createHash('sha256')
+        .update(req.ip || 'unknown')
+        .digest('hex')
+        .substring(0, 16);
+
+  const now = Date.now();
+  const limit = chatbotRateLimit.get(sessionKey) || { count: 0, reset: now + 3600000 };
+
+  if (now > limit.reset) {
+    limit.count = 0;
+    limit.reset = now + 3600000;
+  }
+
+  if (limit.count >= 20) {
+    return res.status(429).json({
+      error: 'Chatbot limit reached. Try again in an hour.',
+      resetIn: Math.ceil((limit.reset - now) / 60000) + ' minutes'
+    });
+  }
+
+  limit.count++;
+  chatbotRateLimit.set(sessionKey, limit);
+
+  // Build conversation history
+  const cleanHistory = Array.isArray(history)
+    ? history.slice(-10).map(m => ({
+        role: m.role === 'assistant' ? 'assistant' : 'user',
+        content: String(m.content).substring(0, 500)
+      }))
+    : [];
+
+  const cleanMessage = message.substring(0, 500).replace(/[<>]/g, '');
+
+  // If no API key use smart fallback
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.json({
+      response: getSmartFallback(cleanMessage),
+      remaining: 20 - limit.count
+    });
+  }
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 500,
+        system: `You are VEX — VEILX's anonymous AI assistant. You are helpful, direct, and respectful of privacy.
+
+Rules:
+- Never ask for personal information
+- Keep responses concise — under 150 words
+- You can help with: advice, coding, writing, math, general questions
+- If asked about sensitive topics, be compassionate but suggest professional help
+- You don't know who the user is and that's perfect
+- Occasionally remind users they are anonymous and safe here
+- Be warm but not overly enthusiastic
+- Speak naturally, not robotically`,
+        messages: [
+          ...cleanHistory,
+          { role: 'user', content: cleanMessage }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      return res.json({
+        response: getSmartFallback(cleanMessage),
+        remaining: 20 - limit.count
+      });
+    }
+
+    const data = await response.json();
+    const reply = data.content?.[0]?.text || getSmartFallback(cleanMessage);
+
+    res.json({
+      response: reply,
+      remaining: 20 - limit.count
+    });
+
+  } catch (err) {
+    res.json({
+      response: getSmartFallback(cleanMessage),
+      remaining: 20 - limit.count
+    });
+  }
+});
+
+// Smart fallback responses when API key not set
+function getSmartFallback(message) {
+  const msg = message.toLowerCase();
+
+  if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey')) {
+    return "Hey! I'm VEX, your anonymous AI assistant. What can I help you with today? You're completely safe here — no identity, no tracking.";
+  }
+  if (msg.includes('code') || msg.includes('programming') || msg.includes('javascript') || msg.includes('python')) {
+    return "Happy to help with code! Share what you're working on and I'll do my best to help debug, explain, or build it with you.";
+  }
+  if (msg.includes('sad') || msg.includes('depressed') || msg.includes('anxious') || msg.includes('stress')) {
+    return "I hear you. Whatever you're going through, you're not alone. Take a breath. Would you like to talk about it, or would some practical coping tips help right now?";
+  }
+  if (msg.includes('help') || msg.includes('how')) {
+    return "I'm here to help! I can assist with advice, coding questions, writing, math, or just someone to talk to. What do you need?";
+  }
+  if (msg.includes('who are you') || msg.includes('what are you')) {
+    return "I'm VEX — VEILX's built-in AI assistant. I'm here to help you anonymously. I don't know who you are, and that's exactly how it should be. What can I do for you?";
+  }
+  if (msg.includes('thank')) {
+    return "Glad I could help! Remember, you can always come back and ask me anything. Stay safe out there. 🔒";
+  }
+  if (msg.includes('advice') || msg.includes('should i')) {
+    return "Good question. Let me think about this with you. Can you give me a bit more context about the situation? I want to give you genuinely useful advice, not a generic answer.";
+  }
+
+  return "That's an interesting one. I want to give you a proper answer — could you share a bit more detail? I'm here and not going anywhere. 🤖";
+}
+
+// Cleanup rate limits hourly
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, limit] of chatbotRateLimit.entries()) {
+    if (now > limit.reset) chatbotRateLimit.delete(key);
+  }
+}, 60 * 60 * 1000);
 // ════════════════════════════════════════════
 // VEILX Phase 3 Step 5 — Monetization Layer
 // Add this block after /api/health route
