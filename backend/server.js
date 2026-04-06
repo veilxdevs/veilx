@@ -224,6 +224,155 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 // ════════════════════════════════════════════
+// VEILX Phase 3 Step 5 — Monetization Layer
+// Add this block after /api/health route
+// ════════════════════════════════════════════
+
+// ── Premium Plans ────────────────────────────
+const PLANS = {
+  free: {
+    name: 'Free',
+    price: 0,
+    roomLifetime: 60,        // 1 hour in minutes
+    maxFileSize: 10,         // MB
+    fileExpiry: 24,          // hours
+    maxDownloads: 10,
+    voiceRooms: true,
+    codespace: 'basic',
+    badge: null
+  },
+  plus: {
+    name: 'VEILX Plus',
+    price: 99,               // ₹99/month
+    roomLifetime: 7 * 24 * 60, // 7 days
+    maxFileSize: 50,
+    fileExpiry: 7 * 24,      // 7 days
+    maxDownloads: 100,
+    voiceRooms: true,
+    codespace: 'pro',
+    badge: '⚡'
+  },
+  pro: {
+    name: 'VEILX Pro',
+    price: 299,              // ₹299/month
+    roomLifetime: 30 * 24 * 60, // 30 days
+    maxFileSize: 100,
+    fileExpiry: 30 * 24,     // 30 days
+    maxDownloads: 1000,
+    voiceRooms: true,
+    codespace: 'pro',
+    badge: '👑'
+  }
+};
+
+// In-memory premium sessions
+// In production replace with a real database
+const premiumSessions = new Map();
+// Structure: sessionToken -> { plan, expiresAt, createdAt }
+
+// ── Get Plans ────────────────────────────────
+app.get('/api/plans', (req, res) => {
+  res.json({
+    plans: Object.entries(PLANS).map(([key, plan]) => ({
+      id: key,
+      ...plan
+    }))
+  });
+});
+
+// ── Check Premium Status ─────────────────────
+app.get('/api/premium/status', (req, res) => {
+  const token = req.headers['x-veilx-token'];
+  if (!token) return res.json({ plan: 'free', active: false });
+
+  const session = premiumSessions.get(token);
+  if (!session || session.expiresAt < Date.now()) {
+    premiumSessions.delete(token);
+    return res.json({ plan: 'free', active: false });
+  }
+
+  res.json({
+    plan: session.plan,
+    active: true,
+    expiresAt: session.expiresAt,
+    features: PLANS[session.plan]
+  });
+});
+
+// ── Create Premium Session (after payment) ───
+// In production connect to Razorpay/Stripe webhook
+app.post('/api/premium/activate', (req, res) => {
+  const { plan, paymentId } = req.body;
+
+  if (!PLANS[plan] || plan === 'free') {
+    return res.status(400).json({ error: 'Invalid plan' });
+  }
+
+  if (!paymentId) {
+    return res.status(400).json({ error: 'Payment ID required' });
+  }
+
+  // Generate anonymous session token
+  const token = crypto.randomBytes(32).toString('hex');
+
+  // Set expiry — 30 days
+  const expiresAt = Date.now() + (30 * 24 * 60 * 60 * 1000);
+
+  premiumSessions.set(token, {
+    plan,
+    paymentId: paymentId.substring(0, 50),
+    expiresAt,
+    createdAt: Date.now()
+  });
+
+  res.json({
+    success: true,
+    token,
+    plan,
+    expiresAt,
+    message: 'Premium activated! Save your token safely.'
+  });
+});
+
+// ── Razorpay Order Creation ──────────────────
+// Uncomment and add your Razorpay key when ready
+/*
+const Razorpay = require('razorpay');
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET
+});
+
+app.post('/api/payment/create-order', async (req, res) => {
+  const { plan } = req.body;
+  if (!PLANS[plan] || plan === 'free') {
+    return res.status(400).json({ error: 'Invalid plan' });
+  }
+
+  try {
+    const order = await razorpay.orders.create({
+      amount: PLANS[plan].price * 100, // paise
+      currency: 'INR',
+      receipt: 'veilx_' + Date.now()
+    });
+    res.json({ orderId: order.id, amount: order.amount });
+  } catch(err) {
+    res.status(500).json({ error: 'Payment creation failed' });
+  }
+});
+*/
+
+// ── Clean expired sessions daily ─────────────
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, session] of premiumSessions.entries()) {
+    if (session.expiresAt < now) {
+      premiumSessions.delete(token);
+    }
+  }
+}, 24 * 60 * 60 * 1000);
+
+// ════════════════════════════════════════════
 // VEILX Phase 3 Step 2 — Temporary File Sharing
 // Add this block after /api/health route
 // Files auto-delete after 24 hours

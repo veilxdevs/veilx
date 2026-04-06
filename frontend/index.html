@@ -274,7 +274,9 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
     <div class="nav-item" onclick="switchPanel('problems',this)"><span class="nav-icon">🆘</span> Ask Community</div>
     <div class="nav-item" onclick="switchPanel('code',this)"><span class="nav-icon">💻</span> Codespace</div>
     <div class="nav-item" onclick="switchPanel('games',this)"><span class="nav-icon">🎮</span> Gaming Zone</div>
-    <div class="sidebar-section">Account</div>
+   <div class="nav-item" onclick="switchPanel('premium',this)">
+  <span class="nav-icon">⚡</span> Go Premium
+</div>
     <div class="nav-item" onclick="switchPanel('settings',this)"><span class="nav-icon">⚙️</span> Settings</div>
     <div class="nav-item" onclick="newIdentity()"><span class="nav-icon">🎭</span> New Identity</div>
     <div class="sidebar-bottom"><div class="security-badge">🔒 E2E Encrypted · Zero Logs</div></div>
@@ -472,6 +474,193 @@ body::before { content:''; position:fixed; inset:0; background-image:linear-grad
         </div>
         <div id="game-area"></div>
       </div>
+      
+      <!-- ═══════════════════ PREMIUM PANEL ═══════════════════ -->
+<div class="panel" id="panel-premium">
+
+  <!-- Header -->
+  <div class="welcome-banner" style="background:linear-gradient(135deg,rgba(123,111,255,0.2),rgba(255,107,157,0.15))">
+    <div class="welcome-title">⚡ Go Premium</div>
+    <div class="welcome-sub">Unlock longer rooms, bigger files, more privacy. Stay anonymous while upgrading.</div>
+  </div>
+
+  <!-- Current Plan Badge -->
+  <div id="current-plan-badge" style="
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:1rem 1.25rem;
+    margin-bottom:1.5rem;
+    display:flex;
+    align-items:center;
+    gap:0.75rem;
+    font-family:var(--mono);
+    font-size:0.75rem
+  ">
+    <span style="font-size:1.2rem">🆓</span>
+    <div>
+      <div style="color:var(--text);font-weight:700">Current Plan: Free</div>
+      <div style="color:var(--muted);font-size:0.65rem;margin-top:2px">Rooms last 1hr · 10MB files · Basic features</div>
+    </div>
+  </div>
+
+  <!-- Plans Grid -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:1.5rem">
+
+    <!-- Free Plan -->
+    <div style="
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:1.25rem;
+    ">
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.5rem">FREE</div>
+      <div style="font-size:1.5rem;font-weight:800;margin-bottom:0.25rem">₹0</div>
+      <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);margin-bottom:1rem">forever</div>
+      <div style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:1rem">
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--success)">✓</span> Rooms last 1 hour</div>
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--success)">✓</span> 10MB file sharing</div>
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--success)">✓</span> Voice rooms</div>
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--success)">✓</span> All chat features</div>
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--muted)">✗</span> <span style="color:var(--muted)">Extended rooms</span></div>
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--muted)">✗</span> <span style="color:var(--muted)">Large files</span></div>
+      </div>
+      <div style="
+        text-align:center;
+        font-family:var(--mono);
+        font-size:0.7rem;
+        color:var(--muted);
+        padding:0.5rem;
+        border:1px solid var(--border);
+        border-radius:6px
+      ">Current Plan</div>
+    </div>
+
+    <!-- Plus Plan -->
+    <div style="
+      background:var(--surface);
+      border:2px solid var(--accent);
+      border-radius:var(--radius);
+      padding:1.25rem;
+      position:relative;
+      overflow:hidden
+    ">
+      <div style="
+        position:absolute;top:0;right:0;
+        background:var(--accent);
+        color:white;
+        font-family:var(--mono);
+        font-size:0.55rem;
+        padding:3px 10px;
+        letter-spacing:1px;
+        border-radius:0 0 0 8px
+      ">POPULAR</div>
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--accent);letter-spacing:2px;margin-bottom:0.5rem">⚡ PLUS</div>
+      <div style="font-size:1.5rem;font-weight:800;margin-bottom:0.25rem">₹99</div>
+      <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);margin-bottom:1rem">per month</div>
+      <div style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:1rem">
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--success)">✓</span> Rooms last 7 days</div>
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--success)">✓</span> 50MB file sharing</div>
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--success)">✓</span> Files last 7 days</div>
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--success)">✓</span> Voice rooms</div>
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--success)">✓</span> ⚡ Plus badge</div>
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--success)">✓</span> Priority support</div>
+      </div>
+      <button onclick="startUpgrade('plus')" style="
+        width:100%;
+        background:linear-gradient(135deg,var(--accent),#5a4fff);
+        border:none;border-radius:8px;
+        color:white;
+        font-family:var(--display);
+        font-size:0.85rem;
+        font-weight:600;
+        padding:0.65rem;
+        cursor:pointer;
+        transition:all 0.15s
+      ">Upgrade to Plus →</button>
+    </div>
+
+    <!-- Pro Plan -->
+    <div style="
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:1.25rem;
+      position:relative
+    ">
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--accent2);letter-spacing:2px;margin-bottom:0.5rem">👑 PRO</div>
+      <div style="font-size:1.5rem;font-weight:800;margin-bottom:0.25rem">₹299</div>
+      <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);margin-bottom:1rem">per month</div>
+      <div style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:1rem">
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--success)">✓</span> Rooms last 30 days</div>
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--success)">✓</span> 100MB file sharing</div>
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--success)">✓</span> Files last 30 days</div>
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--success)">✓</span> API access</div>
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--success)">✓</span> 👑 Pro badge</div>
+        <div style="font-size:0.78rem;display:flex;gap:0.5rem"><span style="color:var(--success)">✓</span> Everything in Plus</div>
+      </div>
+      <button onclick="startUpgrade('pro')" style="
+        width:100%;
+        background:linear-gradient(135deg,var(--accent2),#cc3060);
+        border:none;border-radius:8px;
+        color:white;
+        font-family:var(--display);
+        font-size:0.85rem;
+        font-weight:600;
+        padding:0.65rem;
+        cursor:pointer;
+        transition:all 0.15s
+      ">Upgrade to Pro →</button>
+    </div>
+
+  </div>
+
+  <!-- Restore Premium -->
+  <div style="
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:1.25rem;
+    margin-bottom:1.5rem
+  ">
+    <div style="font-weight:800;margin-bottom:0.5rem">🔑 Restore Premium</div>
+    <div style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem">
+      Already upgraded? Enter your premium token to restore access on this device.
+    </div>
+    <div style="display:flex;gap:0.5rem">
+      <input id="premium-token-input" placeholder="Enter premium token..."
+        style="flex:1;background:var(--surface2);border:1px solid var(--border);
+        border-radius:8px;padding:0.65rem 1rem;color:var(--text);
+        font-family:var(--mono);font-size:0.75rem;outline:none"/>
+      <button onclick="restorePremium()" class="btn-sm btn-outline">Restore</button>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div style="
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:1.25rem
+  ">
+    <div style="font-weight:800;margin-bottom:1rem">❓ FAQ</div>
+    <div style="display:flex;flex-direction:column;gap:0.75rem">
+      <div>
+        <div style="font-size:0.82rem;font-weight:600;margin-bottom:0.25rem">Is payment anonymous?</div>
+        <div style="font-size:0.78rem;color:var(--muted)">We use Razorpay. Your payment info goes to Razorpay, not to us. We only receive a payment confirmation.</div>
+      </div>
+      <div>
+        <div style="font-size:0.82rem;font-weight:600;margin-bottom:0.25rem">What is a premium token?</div>
+        <div style="font-size:0.78rem;color:var(--muted)">After payment, you get a token — like your recovery key. Save it. Use it to restore premium on any device.</div>
+      </div>
+      <div>
+        <div style="font-size:0.82rem;font-weight:600;margin-bottom:0.25rem">Can I cancel?</div>
+        <div style="font-size:0.78rem;color:var(--muted)">Premium is monthly. Just don't renew. No auto-renewal unless you set it up manually.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
 
       <!-- SETTINGS -->
       <div class="panel" id="panel-settings">
@@ -2177,6 +2366,214 @@ document.addEventListener('DOMContentLoaded', function() {
     applyLanguage();
   }
 });
+
+// ════════════════════════════════════════════
+// VEILX Phase 3 Step 5 — Monetization JS
+// ════════════════════════════════════════════
+
+let premiumStatus = {
+  plan: 'free',
+  active: false,
+  token: localStorage.getItem('veilx_premium_token') || null
+};
+
+// ── Load premium status on startup ──────────
+async function loadPremiumStatus() {
+  if (!premiumStatus.token) return;
+
+  try {
+    const res = await fetch('/api/premium/status', {
+      headers: { 'x-veilx-token': premiumStatus.token }
+    });
+    const data = await res.json();
+
+    if (data.active) {
+      premiumStatus.plan = data.plan;
+      premiumStatus.active = true;
+      updatePremiumUI();
+    } else {
+      // Token expired
+      premiumStatus.token = null;
+      localStorage.removeItem('veilx_premium_token');
+    }
+  } catch(e) {
+    // Server unreachable — silently fail
+  }
+}
+
+// ── Update UI based on premium status ───────
+function updatePremiumUI() {
+  const badge = document.getElementById('current-plan-badge');
+  if (!badge) return;
+
+  const plans = {
+    free: { icon: '🆓', name: 'Free', desc: 'Rooms last 1hr · 10MB files · Basic features' },
+    plus: { icon: '⚡', name: 'VEILX Plus', desc: 'Rooms last 7 days · 50MB files · Priority support' },
+    pro:  { icon: '👑', name: 'VEILX Pro',  desc: 'Rooms last 30 days · 100MB files · API access' }
+  };
+
+  const plan = plans[premiumStatus.plan] || plans.free;
+
+  badge.innerHTML =
+    '<span style="font-size:1.2rem">' + plan.icon + '</span>' +
+    '<div>' +
+      '<div style="color:var(--text);font-weight:700;font-family:var(--mono);font-size:0.75rem">Current Plan: ' + plan.name + '</div>' +
+      '<div style="color:var(--muted);font-family:var(--mono);font-size:0.65rem;margin-top:2px">' + plan.desc + '</div>' +
+    '</div>';
+
+  // Update sidebar nav item
+  const premiumNavItem = document.querySelector('.nav-item[onclick*="premium"]');
+  if (premiumNavItem && premiumStatus.plan !== 'free') {
+    premiumNavItem.innerHTML =
+      '<span class="nav-icon">' + plan.icon + '</span> ' + plan.name;
+  }
+
+  // Show premium badge next to codename
+  const sbName = document.getElementById('sb-name');
+  if (sbName && premiumStatus.plan !== 'free') {
+    sbName.textContent = identity.codename + ' ' + plan.icon;
+  }
+}
+
+// ── Start Upgrade Flow ───────────────────────
+function startUpgrade(plan) {
+  const prices = { plus: 99, pro: 299 };
+  const names = { plus: 'VEILX Plus', pro: 'VEILX Pro' };
+
+  // Show payment instructions modal
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:600;display:flex;align-items:center;justify-content:center;padding:1rem;';
+  modal.innerHTML =
+    '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2rem;max-width:420px;width:100%">' +
+      '<div style="font-size:1.1rem;font-weight:800;margin-bottom:0.5rem">Upgrade to ' + names[plan] + '</div>' +
+      '<div style="font-size:0.82rem;color:var(--muted);margin-bottom:1.5rem">₹' + prices[plan] + '/month · Anonymous · No auto-renewal</div>' +
+
+      '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:1.25rem">' +
+        '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.5rem">PAYMENT STEPS</div>' +
+        '<div style="font-size:0.8rem;line-height:2;color:var(--text)">' +
+          '1. Pay ₹' + prices[plan] + ' via UPI / Card<br>' +
+          '2. UPI ID: <span style="color:var(--accent);font-family:var(--mono)">veilx@upi</span><br>' +
+          '3. Add note: <span style="color:var(--accent);font-family:var(--mono)">' + plan + '_' + Date.now().toString().slice(-6) + '</span><br>' +
+          '4. Enter transaction ID below' +
+        '</div>' +
+      '</div>' +
+
+      '<input id="payment-id-input" placeholder="Enter UPI Transaction ID..." style="' +
+        'width:100%;background:var(--surface2);border:1px solid var(--border);' +
+        'border-radius:8px;padding:0.75rem 1rem;color:var(--text);' +
+        'font-family:var(--mono);font-size:0.8rem;outline:none;' +
+        'margin-bottom:0.75rem;box-sizing:border-box"/>' +
+
+      '<div style="display:flex;gap:0.5rem">' +
+        '<button onclick="submitPayment(\'' + plan + '\')" style="' +
+          'flex:1;background:linear-gradient(135deg,var(--accent),#5a4fff);' +
+          'border:none;border-radius:8px;color:white;' +
+          'font-family:var(--display);font-size:0.85rem;font-weight:600;' +
+          'padding:0.65rem;cursor:pointer">Activate Premium</button>' +
+        '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="' +
+          'background:transparent;border:1px solid var(--border);border-radius:8px;' +
+          'color:var(--muted);font-family:var(--display);font-size:0.85rem;' +
+          'padding:0.65rem 1rem;cursor:pointer">Cancel</button>' +
+      '</div>' +
+
+      '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);margin-top:0.75rem;text-align:center">' +
+        'Activation within 24hrs after payment verification' +
+      '</div>' +
+
+    '</div>';
+
+  document.body.appendChild(modal);
+}
+
+// ── Submit Payment ───────────────────────────
+async function submitPayment(plan) {
+  const paymentId = document.getElementById('payment-id-input')?.value.trim();
+  if (!paymentId || paymentId.length < 5) {
+    showToast('Enter a valid transaction ID', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/premium/activate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan, paymentId })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      // Save token
+      premiumStatus.token = data.token;
+      premiumStatus.plan = data.plan;
+      premiumStatus.active = true;
+      localStorage.setItem('veilx_premium_token', data.token);
+
+      // Close modal
+      document.querySelector('div[style*="position:fixed"][style*="rgba(0,0,0,0.8)"]')?.remove();
+
+      updatePremiumUI();
+      showToast('🎉 Premium activated! Token saved.', 'success');
+
+      // Show token to user
+      setTimeout(() => {
+        alert('Your Premium Token (save this!):\n\n' + data.token + '\n\nUse this to restore premium on any device.');
+      }, 500);
+    }
+  } catch(err) {
+    showToast('Activation failed. Try again.', 'error');
+  }
+}
+
+// ── Restore Premium with Token ───────────────
+async function restorePremium() {
+  const token = document.getElementById('premium-token-input')?.value.trim();
+  if (!token || token.length < 10) {
+    showToast('Enter a valid premium token', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/premium/status', {
+      headers: { 'x-veilx-token': token }
+    });
+    const data = await res.json();
+
+    if (data.active) {
+      premiumStatus.token = token;
+      premiumStatus.plan = data.plan;
+      premiumStatus.active = true;
+      localStorage.setItem('veilx_premium_token', token);
+      updatePremiumUI();
+      showToast('🎉 Premium restored!', 'success');
+    } else {
+      showToast('Token invalid or expired', 'error');
+    }
+  } catch(err) {
+    showToast('Could not verify token', 'error');
+  }
+}
+
+// ── Check premium features ───────────────────
+function isPremium() { return premiumStatus.active && premiumStatus.plan !== 'free'; }
+function isPro() { return premiumStatus.active && premiumStatus.plan === 'pro'; }
+
+// ── Load premium on app start ────────────────
+const _enterAppOriginal = window.enterApp || enterApp;
+window.enterApp = function() {
+  _enterAppOriginal();
+  loadPremiumStatus();
+};
+
+// ── Add premium panel to switchPanel titles ──
+const _switchPanelOriginal = window.switchPanel || switchPanel;
+window.switchPanel = function(name, navEl) {
+  _switchPanelOriginal(name, navEl);
+  if (name === 'premium') {
+    document.getElementById('topbar-title').textContent = '⚡ Go Premium';
+    updatePremiumUI();
+  }
+};
+
 </script>
 
 </body>
