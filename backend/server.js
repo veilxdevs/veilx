@@ -314,9 +314,7 @@ app.post('/api/study/:code/timer', (req, res) => {
 
 // ── Socket: Join study room ──────────────────
 // Add this inside io.on('connection') handler
-// PASTE THESE SOCKET HANDLERS INSIDE io.on('connection', (socket) => {
 /*
-  socket.on('study_join', ({ code, codename }) => {
     const room = studyRooms.get((code || '').toUpperCase());
     if (!room) { socket.emit('study_error', { message: 'Study room not found' }); return; }
     socket.join('study_' + room.code);
@@ -1057,18 +1055,6 @@ app.get('/api/report/count/:contentId', (req, res) => {
 // SOCKET.IO — REAL-TIME CHAT
 // ════════════════════════════════════════════
 // ── Phase 4 Step 3: Study Room Sockets ──
-socket.on('study_join', ({ code, codename }) => {
-  const room = studyRooms.get((code || '').toUpperCase());
-  if (!room) { socket.emit('study_error', { message: 'Study room not found' }); return; }
-  socket.join('study_' + room.code);
-  room.members.add(socket.id);
-  io.to('study_' + room.code).emit('study_member_update', { members: room.members.size });
-  socket.emit('study_joined', {
-    code: room.code, subject: room.subject,
-    notes: room.notes, timer: room.timer,
-    sessions: room.sessions, members: room.members.size
-  });
-});
 
 socket.on('study_leave', ({ code }) => {
   const room = studyRooms.get((code || '').toUpperCase());
@@ -1346,9 +1332,44 @@ function endWordDuelGame(code) {
   setTimeout(() => wordGames.delete(code), 5 * 60 * 1000);
 }
   socket.on('get_room_token', ({ code }) => {
+    io.on('connection', (socket) => {
+
+  // ... voice handlers ...
+  // ... wordduel handlers ...
+
+  // ── Study Room Sockets ── ← PASTE HERE (inside connection block)
+  socket.on('study_join', ({ code, codename }) => {
+    const room = studyRooms.get((code || '').toUpperCase());
+    if (!room) { socket.emit('study_error', { message: 'Study room not found' }); return; }
+    socket.join('study_' + room.code);
+    room.members.add(socket.id);
+    io.to('study_' + room.code).emit('study_member_update', { members: room.members.size });
+    socket.emit('study_joined', {
+      code: room.code, subject: room.subject,
+      notes: room.notes, timer: room.timer,
+      sessions: room.sessions, members: room.members.size
+    });
+  });
+
+  socket.on('study_leave', ({ code }) => {
+    const room = studyRooms.get((code || '').toUpperCase());
+    if (room) {
+      room.members.delete(socket.id);
+      socket.leave('study_' + room.code);
+      io.to('study_' + room.code).emit('study_member_update', { members: room.members.size });
+    }
+  });
+
+  // ── This was already here ──
+  socket.on('get_room_token', ({ code }) => {
+    // ...
+  });
+
+}); // ← io.on closes here
     const token = getRoomToken(code.toUpperCase());
     socket.emit('room_token', { token });
   });
+
   // ── Phase 3: WebRTC Voice Signaling ──────────
 // Server only passes signals — never touches audio
 
