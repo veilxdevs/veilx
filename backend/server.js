@@ -223,7 +223,102 @@ setInterval(() => {
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
+// ════════════════════════════════════════════
+// VEILX Phase 4 Step 2 — Confessions Board
+// Add this block after /api/health route
+// Anonymous confessions with emoji reactions
+// Auto-delete after 7 days
+// ════════════════════════════════════════════
 
+// In-memory confessions store
+const confessionsStore = new Map();
+// Structure: id -> { text, reactions, createdAt, category }
+
+const CONFESSION_REACTIONS = ['❤️','😂','😢','😮','🔥','💙','👏','🤝'];
+
+// ── POST a confession ────────────────────────
+app.post('/api/confessions', (req, res) => {
+  const { text, category } = req.body;
+
+  if (!text || typeof text !== 'string' || text.trim().length < 5) {
+    return res.status(400).json({ error: 'Confession too short' });
+  }
+
+  if (text.length > 300) {
+    return res.status(400).json({ error: 'Max 300 characters' });
+  }
+
+  const id = Date.now().toString();
+  const clean = text.substring(0, 300).replace(/[<>]/g, '').trim();
+
+  // Initialize reactions to 0
+  const reactions = {};
+  CONFESSION_REACTIONS.forEach(emoji => { reactions[emoji] = 0; });
+
+  confessionsStore.set(id, {
+    id,
+    text: clean,
+    category: (category || 'General').substring(0, 30),
+    reactions,
+    createdAt: Date.now(),
+    views: 0
+  });
+
+  res.json({ success: true, id });
+});
+
+// ── GET confessions (latest or trending) ────
+app.get('/api/confessions', (req, res) => {
+  const sort = req.query.sort || 'latest';
+  const now = Date.now();
+  const sevenDays = 7 * 24 * 60 * 60 * 1000;
+
+  const list = [];
+
+  for (const [id, c] of confessionsStore.entries()) {
+    // Auto-expire after 7 days
+    if (now - c.createdAt > sevenDays) {
+      confessionsStore.delete(id);
+      continue;
+    }
+    const totalReactions = Object.values(c.reactions).reduce((a, b) => a + b, 0);
+    list.push({ ...c, totalReactions });
+  }
+
+  // Sort by latest or trending
+  if (sort === 'trending') {
+    list.sort((a, b) => b.totalReactions - a.totalReactions);
+  } else {
+    list.sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  res.json({ confessions: list.slice(0, 30) });
+});
+
+// ── React to a confession ────────────────────
+app.post('/api/confessions/:id/react', (req, res) => {
+  const confession = confessionsStore.get(req.params.id);
+  if (!confession) return res.status(404).json({ error: 'Not found' });
+
+  const { emoji } = req.body;
+  if (!CONFESSION_REACTIONS.includes(emoji)) {
+    return res.status(400).json({ error: 'Invalid reaction' });
+  }
+
+  confession.reactions[emoji] = (confession.reactions[emoji] || 0) + 1;
+  res.json({ reactions: confession.reactions });
+});
+
+// ── Auto-cleanup every 24 hours ──────────────
+setInterval(() => {
+  const now = Date.now();
+  const sevenDays = 7 * 24 * 60 * 60 * 1000;
+  for (const [id, c] of confessionsStore.entries()) {
+    if (now - c.createdAt > sevenDays) {
+      confessionsStore.delete(id);
+    }
+  }
+}, 24 * 60 * 60 * 1000);
 // ════════════════════════════════════════════
 // VEILX Phase 4 Step 1 — AI Chatbot
 // Add this block after /api/health route

@@ -263,6 +263,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <div class="nav-item" onclick="switchPanel('code',this)"><span class="nav-icon">💻</span> Codespace</div>
     <div class="nav-item" onclick="switchPanel('games',this)"><span class="nav-icon">🎮</span> Gaming Zone</div>
     <div class="nav-item" onclick="switchPanel('chatbot',this)"><span class="nav-icon">🤖</span> VEX Assistant</div>
+    <div class="nav-item" onclick="switchPanel('confessions',this)"><span class="nav-icon">💭</span> Confessions</div>
     <div class="sidebar-section">Account</div>
     <div class="nav-item" onclick="switchPanel('premium',this)"><span class="nav-icon">⚡</span> Go Premium</div>
     <div class="nav-item" onclick="switchPanel('settings',this)"><span class="nav-icon">⚙️</span> Settings</div>
@@ -453,7 +454,50 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         </div>
         <div id="game-area"></div>
       </div>
+      <!-- ══ CONFESSIONS PANEL ══ -->
+<div class="panel" id="panel-confessions">
 
+  <!-- Header -->
+  <div class="welcome-banner" style="background:linear-gradient(135deg,rgba(255,107,157,0.15),rgba(123,111,255,0.1))">
+    <div class="welcome-title">💭 Confessions</div>
+    <div class="welcome-sub">Say what you could never say out loud. Completely anonymous. No identity. Just words.</div>
+  </div>
+
+  <!-- Post Box -->
+  <div class="post-box" style="margin-bottom:1.25rem">
+    <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.65rem">CONFESS ANONYMOUSLY</div>
+    <textarea id="confession-input" placeholder="I've never told anyone this before..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.75rem 1rem;color:var(--text);font-family:var(--display);font-size:0.875rem;outline:none;resize:none;height:90px;margin-bottom:0.5rem;transition:border-color 0.2s;line-height:1.5;box-sizing:border-box" oninput="updateConfessionCount(this)" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.65rem">
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted)">
+        <span id="confession-count">0</span>/300 characters
+      </div>
+      <div style="display:flex;gap:0.4rem">
+        <select id="confession-cat" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.5rem;color:var(--text);font-family:var(--mono);font-size:0.65rem;outline:none;cursor:pointer">
+          <option value="General">General</option>
+          <option value="Love">Love ❤️</option>
+          <option value="Work">Work 💼</option>
+          <option value="Family">Family 👨‍👩‍👧</option>
+          <option value="Secret">Secret 🤫</option>
+          <option value="Regret">Regret 😔</option>
+          <option value="Dream">Dream ✨</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-sm btn-accent" onclick="postConfession()" style="width:100%">💭 Confess Anonymously</button>
+  </div>
+
+  <!-- Sort Toggle -->
+  <div style="display:flex;gap:0.5rem;margin-bottom:1rem">
+    <button id="sort-latest-btn" onclick="loadConfessions('latest')" class="btn-sm btn-accent" style="font-size:0.72rem">🕐 Latest</button>
+    <button id="sort-trending-btn" onclick="loadConfessions('trending')" class="btn-sm btn-outline" style="font-size:0.72rem">🔥 Most Reactions</button>
+  </div>
+
+  <!-- Confessions List -->
+  <div id="confessions-list">
+    <div style="text-align:center;font-family:var(--mono);font-size:0.72rem;color:var(--muted);padding:2rem">Loading confessions...</div>
+  </div>
+
+</div>
       <!-- CHATBOT -->
       <div class="panel" id="panel-chatbot">
         <div style="background:linear-gradient(135deg,rgba(123,111,255,0.15),rgba(255,107,157,0.1));border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;margin-bottom:1.1rem;display:flex;align-items:center;gap:0.85rem">
@@ -922,6 +966,190 @@ function removeChatbotTyping(){const t=document.getElementById('chatbot-typing')
 function clearChatbot(){chatbotHistory=[];const container=document.getElementById('chatbot-messages');if(!container)return;container.innerHTML='<div style="display:flex;gap:0.65rem;align-items:flex-start"><div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#5a4fff);display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0">🤖</div><div style="background:var(--surface2);border:1px solid var(--border);border-radius:0 12px 12px 12px;padding:0.6rem 0.85rem;font-size:0.85rem;line-height:1.6;max-width:82%">Fresh start! What\'s on your mind? I\'m here to help — anonymously. 🔒</div></div>';showToast('Chat cleared','success');}
 function askSuggestion(text){const input=document.getElementById('chatbot-input');if(input)input.value=text;sendChatbotMessage();}
 function handleChatbotKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChatbotMessage();}}
+// ════════════════════════════════════════════
+// VEILX Phase 4 Step 2 — Confessions Board JS
+// ════════════════════════════════════════════
+
+let confessionsSort = 'latest';
+let myReactions = JSON.parse(localStorage.getItem('veilx_reactions') || '{}');
+
+// ── Character counter ────────────────────────
+function updateConfessionCount(el) {
+  const count = document.getElementById('confession-count');
+  if (count) {
+    count.textContent = el.value.length;
+    count.style.color = el.value.length > 270 ? 'var(--danger)' : 'var(--muted)';
+  }
+}
+
+// ── Post a confession ────────────────────────
+async function postConfession() {
+  const text = document.getElementById('confession-input')?.value.trim();
+  const category = document.getElementById('confession-cat')?.value || 'General';
+
+  if (!text || text.length < 5) {
+    showToast('Write a bit more to confess', 'error');
+    return;
+  }
+  if (text.length > 300) {
+    showToast('Max 300 characters', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/confessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, category })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      showToast(data.error || 'Could not post', 'error');
+      return;
+    }
+
+    document.getElementById('confession-input').value = '';
+    document.getElementById('confession-count').textContent = '0';
+    showToast('Confessed anonymously 💭', 'success');
+    loadConfessions(confessionsSort);
+
+  } catch (err) {
+    // Offline fallback — show locally
+    showToast('Server offline. Try again later.', 'error');
+  }
+}
+
+// ── Load confessions ─────────────────────────
+async function loadConfessions(sort) {
+  confessionsSort = sort || 'latest';
+
+  // Update sort buttons
+  const latestBtn = document.getElementById('sort-latest-btn');
+  const trendingBtn = document.getElementById('sort-trending-btn');
+  if (latestBtn && trendingBtn) {
+    if (confessionsSort === 'latest') {
+      latestBtn.className = 'btn-sm btn-accent';
+      trendingBtn.className = 'btn-sm btn-outline';
+    } else {
+      latestBtn.className = 'btn-sm btn-outline';
+      trendingBtn.className = 'btn-sm btn-accent';
+    }
+  }
+
+  const container = document.getElementById('confessions-list');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/api/confessions?sort=' + confessionsSort);
+    const data = await res.json();
+
+    if (!data.confessions || data.confessions.length === 0) {
+      container.innerHTML =
+        '<div style="text-align:center;padding:2rem">' +
+          '<div style="font-size:2rem;margin-bottom:0.5rem">💭</div>' +
+          '<div style="font-family:var(--mono);font-size:0.72rem;color:var(--muted)">No confessions yet. Be the first.</div>' +
+        '</div>';
+      return;
+    }
+
+    container.innerHTML = data.confessions.map(function(c) {
+      return renderConfessionCard(c);
+    }).join('');
+
+  } catch (err) {
+    container.innerHTML =
+      '<div style="text-align:center;font-family:var(--mono);font-size:0.72rem;color:var(--muted);padding:2rem">' +
+        'Could not load confessions. Check your connection.' +
+      '</div>';
+  }
+}
+
+// ── Render a single confession card ──────────
+function renderConfessionCard(c) {
+  const timeStr = timeAgo(c.createdAt);
+  const catColors = {
+    'Love': 'var(--accent2)',
+    'Work': '#5bc8ff',
+    'Family': '#4fffb0',
+    'Secret': 'var(--accent)',
+    'Regret': '#ff9f43',
+    'Dream': '#a29bfe',
+    'General': 'var(--muted)'
+  };
+  const catColor = catColors[c.category] || 'var(--muted)';
+
+  const totalReactions = Object.values(c.reactions || {}).reduce((a, b) => a + b, 0);
+
+  const reactionsHTML = ['❤️','😂','😢','😮','🔥','💙','👏','🤝'].map(function(emoji) {
+    const count = (c.reactions && c.reactions[emoji]) || 0;
+    const reacted = myReactions[c.id] === emoji;
+    return '<button onclick="reactToConfession(\'' + c.id + '\',\'' + emoji + '\')" style="' +
+      'background:' + (reacted ? 'rgba(123,111,255,0.2)' : 'var(--surface2)') + ';' +
+      'border:1px solid ' + (reacted ? 'var(--accent)' : 'var(--border)') + ';' +
+      'border-radius:20px;padding:0.22rem 0.55rem;cursor:pointer;' +
+      'font-size:0.75rem;display:inline-flex;align-items:center;gap:0.25rem;' +
+      'transition:all 0.15s;color:var(--text)">' +
+      emoji + (count > 0 ? ' <span style="font-family:var(--mono);font-size:0.6rem;color:var(--muted)">' + count + '</span>' : '') +
+    '</button>';
+  }).join('');
+
+  return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;margin-bottom:0.85rem;transition:border-color 0.2s" onmouseover="this.style.borderColor=\'rgba(123,111,255,0.3)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' +
+
+    '<div style="display:flex;align-items:center;gap:0.65rem;margin-bottom:0.75rem">' +
+      '<div style="width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:0.82rem;flex-shrink:0">💭</div>' +
+      '<div>' +
+        '<div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)">Anonymous · ' + timeStr + '</div>' +
+      '</div>' +
+      '<div style="margin-left:auto;font-family:var(--mono);font-size:0.58rem;padding:0.18rem 0.55rem;border-radius:20px;border:1px solid ' + catColor + ';color:' + catColor + '">' + escHtml(c.category) + '</div>' +
+    '</div>' +
+
+    '<div style="font-size:0.9rem;line-height:1.7;color:var(--text);margin-bottom:0.85rem;font-style:italic">"' + escHtml(c.text) + '"</div>' +
+
+    '<div style="display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center">' +
+      reactionsHTML +
+      (totalReactions > 0 ?
+        '<div style="margin-left:auto;font-family:var(--mono);font-size:0.6rem;color:var(--muted)">' + totalReactions + ' reactions</div>' : '') +
+    '</div>' +
+
+  '</div>';
+}
+
+// ── React to a confession ────────────────────
+async function reactToConfession(id, emoji) {
+  // Prevent double reactions
+  if (myReactions[id]) {
+    showToast('You already reacted to this', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/confessions/' + id + '/react', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emoji })
+    });
+
+    if (res.ok) {
+      myReactions[id] = emoji;
+      localStorage.setItem('veilx_reactions', JSON.stringify(myReactions));
+      loadConfessions(confessionsSort);
+    }
+  } catch (err) {
+    showToast('Could not react. Try again.', 'error');
+  }
+}
+
+// ── Load confessions when panel opens ────────
+const _switchPanelConfessions = window.switchPanel || switchPanel;
+window.switchPanel = function(name, navEl) {
+  _switchPanelConfessions(name, navEl);
+  if (name === 'confessions') {
+    document.getElementById('topbar-title').textContent = '💭 Confessions';
+    loadConfessions('latest');
+  }
+};
 </script>
 </body>
 </html>
