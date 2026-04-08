@@ -225,6 +225,7 @@ app.get('/api/health', (req, res) => {
 });
 // ════════════════════════════════════════════
 // VEILX Phase 4 Step 3 — Study Groups
+// Add this block after /api/health route
 // Pomodoro timer + shared notes per room
 // ════════════════════════════════════════════
 
@@ -1055,7 +1056,6 @@ app.get('/api/report/count/:contentId', (req, res) => {
 // ════════════════════════════════════════════
 // SOCKET.IO — REAL-TIME CHAT
 // ════════════════════════════════════════════
-
 // ── Phase 4 Step 3: Study Room Sockets ──
 socket.on('study_join', ({ code, codename }) => {
   const room = studyRooms.get((code || '').toUpperCase());
@@ -1077,7 +1077,10 @@ socket.on('study_leave', ({ code }) => {
     socket.leave('study_' + room.code);
     io.to('study_' + room.code).emit('study_member_update', { members: room.members.size });
   }
-});  let currentRoom = null;
+});
+// ── Phase 4 Step 3: Study Room Sockets ──
+socket.on('study_join', ({ code, codename }) => {
+  let currentRoom = null;
   let userCodename = null;
   let userEmoji = null;
 
@@ -1412,6 +1415,7 @@ socket.on('voice_leave', ({ code }) => {
       }
     }
   });
+});
 // ════════════════════════════════════════════
 // STATIC FILES + START
 // ════════════════════════════════════════════
