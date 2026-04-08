@@ -224,8 +224,131 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 // ════════════════════════════════════════════
+// VEILX Phase 4 Step 3 — Study Groups
+// Pomodoro timer + shared notes per room
+// ════════════════════════════════════════════
+
+const studyRooms = new Map();
+// Structure: code -> {
+//   code, subject, members: Set,
+//   notes: string, timer: {mode, timeLeft, running},
+//   sessions: number, createdAt
+// }
+
+// ── Create study room ────────────────────────
+app.post('/api/study/create', (req, res) => {
+  const { subject } = req.body;
+  const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+  studyRooms.set(code, {
+    code,
+    subject: sanitize(subject || 'General Study', 50),
+    members: new Set(),
+    notes: '',
+    timer: { mode: 'focus', timeLeft: 25 * 60, running: false },
+    sessions: 0,
+    createdAt: Date.now()
+  });
+
+  res.json({ code, subject: studyRooms.get(code).subject });
+});
+
+// ── Get study room info ──────────────────────
+app.get('/api/study/:code', (req, res) => {
+  const room = studyRooms.get(req.params.code.toUpperCase());
+  if (!room) return res.status(404).json({ error: 'Study room not found' });
+
+  res.json({
+    code: room.code,
+    subject: room.subject,
+    members: room.members.size,
+    notes: room.notes,
+    timer: room.timer,
+    sessions: room.sessions
+  });
+});
+
+// ── Update shared notes ──────────────────────
+app.post('/api/study/:code/notes', (req, res) => {
+  const room = studyRooms.get(req.params.code.toUpperCase());
+  if (!room) return res.status(404).json({ error: 'Not found' });
+
+  const { notes } = req.body;
+  if (typeof notes !== 'string') return res.status(400).json({ error: 'Invalid notes' });
+
+  room.notes = notes.substring(0, 5000);
+  io.to('study_' + room.code).emit('study_notes_updated', { notes: room.notes });
+  res.json({ success: true });
+});
+
+// ── Timer control ────────────────────────────
+app.post('/api/study/:code/timer', (req, res) => {
+  const room = studyRooms.get(req.params.code.toUpperCase());
+  if (!room) return res.status(404).json({ error: 'Not found' });
+
+  const { action } = req.body;
+
+  if (action === 'start') {
+    room.timer.running = true;
+  } else if (action === 'pause') {
+    room.timer.running = false;
+  } else if (action === 'reset') {
+    room.timer.running = false;
+    room.timer.timeLeft = room.timer.mode === 'focus' ? 25 * 60 : 5 * 60;
+  } else if (action === 'switch') {
+    room.timer.running = false;
+    if (room.timer.mode === 'focus') {
+      room.timer.mode = 'break';
+      room.timer.timeLeft = 5 * 60;
+      room.sessions++;
+    } else {
+      room.timer.mode = 'focus';
+      room.timer.timeLeft = 25 * 60;
+    }
+  }
+
+  io.to('study_' + room.code).emit('study_timer_update', { timer: room.timer, sessions: room.sessions });
+  res.json({ timer: room.timer, sessions: room.sessions });
+});
+
+// ── Socket: Join study room ──────────────────
+// Add this inside io.on('connection') handler
+// PASTE THESE SOCKET HANDLERS INSIDE io.on('connection', (socket) => {
+/*
+  socket.on('study_join', ({ code, codename }) => {
+    const room = studyRooms.get((code || '').toUpperCase());
+    if (!room) { socket.emit('study_error', { message: 'Study room not found' }); return; }
+    socket.join('study_' + room.code);
+    room.members.add(socket.id);
+    io.to('study_' + room.code).emit('study_member_update', { members: room.members.size });
+    socket.emit('study_joined', {
+      code: room.code, subject: room.subject,
+      notes: room.notes, timer: room.timer,
+      sessions: room.sessions, members: room.members.size
+    });
+  });
+
+  socket.on('study_leave', ({ code }) => {
+    const room = studyRooms.get((code || '').toUpperCase());
+    if (room) {
+      room.members.delete(socket.id);
+      socket.leave('study_' + room.code);
+      io.to('study_' + room.code).emit('study_member_update', { members: room.members.size });
+    }
+  });
+*/
+
+// Auto-cleanup study rooms after 4 hours
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, room] of studyRooms.entries()) {
+    if (now - room.createdAt > 4 * 60 * 60 * 1000) {
+      studyRooms.delete(code);
+    }
+  }
+}, 60 * 60 * 1000);
+// ════════════════════════════════════════════
 // VEILX Phase 4 Step 2 — Confessions Board
-// Add this block after /api/health route
 // Anonymous confessions with emoji reactions
 // Auto-delete after 7 days
 // ════════════════════════════════════════════
@@ -321,7 +444,6 @@ setInterval(() => {
 }, 24 * 60 * 60 * 1000);
 // ════════════════════════════════════════════
 // VEILX Phase 4 Step 1 — AI Chatbot
-// Add this block after /api/health route
 // Personal anonymous AI assistant
 // ════════════════════════════════════════════
 
@@ -469,7 +591,6 @@ setInterval(() => {
 }, 60 * 60 * 1000);
 // ════════════════════════════════════════════
 // VEILX Phase 3 Step 5 — Monetization Layer
-// Add this block after /api/health route
 // ════════════════════════════════════════════
 
 // ── Premium Plans ────────────────────────────
@@ -618,7 +739,6 @@ setInterval(() => {
 
 // ════════════════════════════════════════════
 // VEILX Phase 3 Step 2 — Temporary File Sharing
-// Add this block after /api/health route
 // Files auto-delete after 24 hours
 // Max file size: 10MB
 // No identity stored with files
@@ -755,7 +875,6 @@ app.use((err, req, res, next) => {
 });
 // ════════════════════════════════════════════
 // VEILX Phase 3 Step 1 — Voice Room Signaling
-// Add this block after /api/health route
 // WebRTC signaling — server never hears audio
 // ════════════════════════════════════════════
 
@@ -937,8 +1056,28 @@ app.get('/api/report/count/:contentId', (req, res) => {
 // SOCKET.IO — REAL-TIME CHAT
 // ════════════════════════════════════════════
 
-io.on('connection', (socket) => {
-  let currentRoom = null;
+// ── Phase 4 Step 3: Study Room Sockets ──
+socket.on('study_join', ({ code, codename }) => {
+  const room = studyRooms.get((code || '').toUpperCase());
+  if (!room) { socket.emit('study_error', { message: 'Study room not found' }); return; }
+  socket.join('study_' + room.code);
+  room.members.add(socket.id);
+  io.to('study_' + room.code).emit('study_member_update', { members: room.members.size });
+  socket.emit('study_joined', {
+    code: room.code, subject: room.subject,
+    notes: room.notes, timer: room.timer,
+    sessions: room.sessions, members: room.members.size
+  });
+});
+
+socket.on('study_leave', ({ code }) => {
+  const room = studyRooms.get((code || '').toUpperCase());
+  if (room) {
+    room.members.delete(socket.id);
+    socket.leave('study_' + room.code);
+    io.to('study_' + room.code).emit('study_member_update', { members: room.members.size });
+  }
+});  let currentRoom = null;
   let userCodename = null;
   let userEmoji = null;
 
@@ -1273,8 +1412,6 @@ socket.on('voice_leave', ({ code }) => {
       }
     }
   });
-});
-
 // ════════════════════════════════════════════
 // STATIC FILES + START
 // ════════════════════════════════════════════

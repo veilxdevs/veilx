@@ -264,6 +264,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <div class="nav-item" onclick="switchPanel('games',this)"><span class="nav-icon">🎮</span> Gaming Zone</div>
     <div class="nav-item" onclick="switchPanel('chatbot',this)"><span class="nav-icon">🤖</span> VEX Assistant</div>
     <div class="nav-item" onclick="switchPanel('confessions',this)"><span class="nav-icon">💭</span> Confessions</div>
+    <div class="nav-item" onclick="switchPanel('study',this)"><span class="nav-icon">📚</span> Study Groups</div> 
     <div class="sidebar-section">Account</div>
     <div class="nav-item" onclick="switchPanel('premium',this)"><span class="nav-icon">⚡</span> Go Premium</div>
     <div class="nav-item" onclick="switchPanel('settings',this)"><span class="nav-icon">⚙️</span> Settings</div>
@@ -454,6 +455,87 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         </div>
         <div id="game-area"></div>
       </div>
+      <!-- ══ STUDY GROUPS PANEL ══ -->
+<div class="panel" id="panel-study">
+
+  <!-- Header -->
+  <div class="welcome-banner" style="background:linear-gradient(135deg,rgba(79,255,176,0.1),rgba(123,111,255,0.12))">
+    <div class="welcome-title">📚 Study Groups</div>
+    <div class="welcome-sub">Anonymous Pomodoro study rooms with shared notes. Focus together, stay anonymous.</div>
+  </div>
+
+  <!-- Create / Join -->
+  <div id="study-lobby">
+    <div class="post-box" style="margin-bottom:1rem">
+      <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.65rem">CREATE STUDY ROOM</div>
+      <input id="study-subject-input" placeholder="What are you studying? (e.g. Maths, CA Foundation...)" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;color:var(--text);font-family:var(--display);font-size:0.85rem;outline:none;margin-bottom:0.65rem;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      <button class="btn-sm btn-accent" onclick="createStudyRoom()" style="width:100%">📚 Create Study Room</button>
+    </div>
+    <div class="post-box">
+      <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.65rem">JOIN EXISTING ROOM</div>
+      <div style="display:flex;gap:0.5rem">
+        <input id="study-code-input" placeholder="Enter 6-digit study code..." style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;color:var(--text);font-family:var(--mono);font-size:0.82rem;letter-spacing:2px;outline:none;text-transform:uppercase" maxlength="6" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+        <button class="btn-sm btn-outline" onclick="joinStudyRoom()">Join →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Study Room (hidden by default) -->
+  <div id="study-room-view" style="display:none">
+
+    <!-- Room header -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.85rem">
+      <div style="font-size:1.5rem">📚</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:800;font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="study-subject-display">Study Room</div>
+        <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-top:2px">
+          Code: <span id="study-code-display" style="color:var(--accent);cursor:pointer" onclick="copyStudyCode()">------</span>
+          · <span id="study-members-display">1</span> studying
+          · <span id="study-sessions-display">0</span> sessions done
+        </div>
+      </div>
+      <button onclick="leaveStudyRoom()" style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.7rem;color:var(--muted);font-family:var(--mono);font-size:0.65rem;cursor:pointer;flex-shrink:0">Leave</button>
+    </div>
+
+    <!-- Pomodoro Timer -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;text-align:center">
+
+      <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:2px;margin-bottom:1rem" id="study-mode-label">🎯 FOCUS TIME</div>
+
+      <!-- Timer display -->
+      <div id="study-timer-display" style="font-family:var(--mono);font-size:3.5rem;font-weight:700;color:var(--accent);letter-spacing:4px;margin-bottom:1rem;line-height:1">25:00</div>
+
+      <!-- Progress bar -->
+      <div style="background:var(--surface2);border-radius:4px;height:6px;margin-bottom:1.1rem;overflow:hidden">
+        <div id="study-progress-bar" style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;width:100%;transition:width 1s linear"></div>
+      </div>
+
+      <!-- Controls -->
+      <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap">
+        <button id="study-start-btn" onclick="controlStudyTimer('start')" class="btn-sm btn-accent">▶ Start</button>
+        <button id="study-pause-btn" onclick="controlStudyTimer('pause')" class="btn-sm btn-outline" style="display:none">⏸ Pause</button>
+        <button onclick="controlStudyTimer('reset')" class="btn-sm btn-outline">↺ Reset</button>
+        <button onclick="controlStudyTimer('switch')" class="btn-sm btn-outline" id="study-switch-btn">☕ Break</button>
+      </div>
+
+      <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-top:0.75rem">
+        Synced with all room members
+      </div>
+    </div>
+
+    <!-- Shared Notes -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+      <div style="padding:0.65rem 1rem;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between">
+        <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:2px">📝 SHARED NOTES</div>
+        <div style="font-family:var(--mono);font-size:0.6rem;color:var(--success)">
+          <span class="status-dot"></span>Live sync
+        </div>
+      </div>
+      <textarea id="study-notes" placeholder="Type notes here — visible to everyone in this room. Use it for summaries, key points, questions..." style="width:100%;min-height:200px;background:transparent;border:none;padding:1rem;color:var(--text);font-family:var(--mono);font-size:0.8rem;outline:none;resize:vertical;line-height:1.7;box-sizing:border-box" oninput="syncStudyNotes(this.value)"></textarea>
+    </div>
+
+  </div>
+</div>
       <!-- ══ CONFESSIONS PANEL ══ -->
 <div class="panel" id="panel-confessions">
 
@@ -1148,6 +1230,308 @@ window.switchPanel = function(name, navEl) {
   if (name === 'confessions') {
     document.getElementById('topbar-title').textContent = '💭 Confessions';
     loadConfessions('latest');
+  }
+};// ════════════════════════════════════════════
+// VEILX Phase 4 Step 3 — Study Groups JS
+// ════════════════════════════════════════════
+
+let studyState = {
+  code: null,
+  subject: null,
+  timer: { mode: 'focus', timeLeft: 25 * 60, running: false },
+  sessions: 0,
+  totalFocusTime: 25 * 60,
+  localInterval: null
+};
+
+let notesSyncTimeout = null;
+
+// ── Create study room ────────────────────────
+async function createStudyRoom() {
+  const subject = document.getElementById('study-subject-input')?.value.trim() || 'General Study';
+
+  try {
+    const res = await fetch('/api/study/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject })
+    });
+    const data = await res.json();
+    enterStudyRoom(data.code, data.subject, '', { mode: 'focus', timeLeft: 25 * 60, running: false }, 0);
+    showToast('Study room created! Code: ' + data.code, 'success');
+  } catch(err) {
+    showToast('Could not create room. Try again.', 'error');
+  }
+}
+
+// ── Join study room ──────────────────────────
+async function joinStudyRoom() {
+  const code = document.getElementById('study-code-input')?.value.trim().toUpperCase();
+  if (!code || code.length !== 6) {
+    showToast('Enter a valid 6-digit code', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/study/' + code);
+    if (!res.ok) { showToast('Study room not found', 'error'); return; }
+    const data = await res.json();
+    enterStudyRoom(data.code, data.subject, data.notes, data.timer, data.sessions);
+    showToast('Joined study room!', 'success');
+
+    if (window._socket) {
+      window._socket.emit('study_join', { code, codename: identity.codename });
+    }
+  } catch(err) {
+    showToast('Could not join room. Try again.', 'error');
+  }
+}
+
+// ── Enter study room view ────────────────────
+function enterStudyRoom(code, subject, notes, timer, sessions) {
+  studyState.code = code;
+  studyState.subject = subject;
+  studyState.timer = { ...timer };
+  studyState.sessions = sessions;
+  studyState.totalFocusTime = timer.mode === 'focus' ? 25 * 60 : 5 * 60;
+
+  // Show room view, hide lobby
+  document.getElementById('study-lobby').style.display = 'none';
+  document.getElementById('study-room-view').style.display = 'block';
+
+  // Update displays
+  document.getElementById('study-subject-display').textContent = subject;
+  document.getElementById('study-code-display').textContent = code;
+  document.getElementById('study-sessions-display').textContent = sessions;
+  document.getElementById('study-notes').value = notes || '';
+
+  updateStudyTimerDisplay();
+
+  // Start local countdown if timer is running
+  if (timer.running) startLocalCountdown();
+}
+
+// ── Leave study room ─────────────────────────
+function leaveStudyRoom() {
+  clearInterval(studyState.localInterval);
+  studyState = { code: null, subject: null, timer: { mode: 'focus', timeLeft: 25 * 60, running: false }, sessions: 0, totalFocusTime: 25 * 60, localInterval: null };
+
+  if (window._socket && studyState.code) {
+    window._socket.emit('study_leave', { code: studyState.code });
+  }
+
+  document.getElementById('study-lobby').style.display = 'block';
+  document.getElementById('study-room-view').style.display = 'none';
+  document.getElementById('study-subject-input').value = '';
+  document.getElementById('study-code-input').value = '';
+  showToast('Left study room', 'success');
+}
+
+// ── Timer controls ───────────────────────────
+async function controlStudyTimer(action) {
+  if (!studyState.code) return;
+
+  try {
+    const res = await fetch('/api/study/' + studyState.code + '/timer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action })
+    });
+    const data = await res.json();
+    updateLocalTimer(data.timer, data.sessions);
+  } catch(err) {
+    // Handle locally if server unreachable
+    if (action === 'start') {
+      studyState.timer.running = true;
+      startLocalCountdown();
+    } else if (action === 'pause') {
+      studyState.timer.running = false;
+      clearInterval(studyState.localInterval);
+    } else if (action === 'reset') {
+      studyState.timer.running = false;
+      clearInterval(studyState.localInterval);
+      studyState.timer.timeLeft = studyState.timer.mode === 'focus' ? 25 * 60 : 5 * 60;
+    } else if (action === 'switch') {
+      studyState.timer.running = false;
+      clearInterval(studyState.localInterval);
+      if (studyState.timer.mode === 'focus') {
+        studyState.timer.mode = 'break';
+        studyState.timer.timeLeft = 5 * 60;
+        studyState.sessions++;
+      } else {
+        studyState.timer.mode = 'focus';
+        studyState.timer.timeLeft = 25 * 60;
+      }
+    }
+    updateStudyTimerDisplay();
+  }
+}
+
+// ── Update local timer state ─────────────────
+function updateLocalTimer(timer, sessions) {
+  clearInterval(studyState.localInterval);
+  studyState.timer = { ...timer };
+  if (sessions !== undefined) studyState.sessions = sessions;
+  studyState.totalFocusTime = timer.mode === 'focus' ? 25 * 60 : 5 * 60;
+  updateStudyTimerDisplay();
+  if (timer.running) startLocalCountdown();
+}
+
+// ── Local countdown ──────────────────────────
+function startLocalCountdown() {
+  clearInterval(studyState.localInterval);
+  studyState.localInterval = setInterval(function() {
+    if (!studyState.timer.running) {
+      clearInterval(studyState.localInterval);
+      return;
+    }
+
+    studyState.timer.timeLeft = Math.max(0, studyState.timer.timeLeft - 1);
+    updateStudyTimerDisplay();
+
+    if (studyState.timer.timeLeft === 0) {
+      clearInterval(studyState.localInterval);
+      studyState.timer.running = false;
+      timerComplete();
+    }
+  }, 1000);
+}
+
+// ── Timer complete ───────────────────────────
+function timerComplete() {
+  const mode = studyState.timer.mode;
+  if (mode === 'focus') {
+    showToast('🎉 Focus session complete! Take a break.', 'success');
+    studyState.sessions++;
+    document.getElementById('study-sessions-display').textContent = studyState.sessions;
+  } else {
+    showToast('☕ Break over! Time to focus.', 'success');
+  }
+  updateStudyTimerDisplay();
+
+  // Play notification sound if possible
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = mode === 'focus' ? 523 : 440;
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.8);
+  } catch(e) {}
+}
+
+// ── Update timer display ─────────────────────
+function updateStudyTimerDisplay() {
+  const mins = Math.floor(studyState.timer.timeLeft / 60);
+  const secs = studyState.timer.timeLeft % 60;
+  const display = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+
+  const timerEl = document.getElementById('study-timer-display');
+  const modeLabel = document.getElementById('study-mode-label');
+  const progressBar = document.getElementById('study-progress-bar');
+  const startBtn = document.getElementById('study-start-btn');
+  const pauseBtn = document.getElementById('study-pause-btn');
+  const switchBtn = document.getElementById('study-switch-btn');
+
+  if (!timerEl) return;
+
+  timerEl.textContent = display;
+
+  // Color based on mode
+  const isFocus = studyState.timer.mode === 'focus';
+  timerEl.style.color = isFocus ? 'var(--accent)' : 'var(--success)';
+
+  if (modeLabel) {
+    modeLabel.textContent = isFocus ? '🎯 FOCUS TIME' : '☕ BREAK TIME';
+  }
+
+  // Progress bar
+  if (progressBar) {
+    const total = isFocus ? 25 * 60 : 5 * 60;
+    const pct = (studyState.timer.timeLeft / total) * 100;
+    progressBar.style.width = pct + '%';
+    progressBar.style.background = isFocus
+      ? 'linear-gradient(90deg,var(--accent),var(--accent2))'
+      : 'linear-gradient(90deg,var(--success),#2ecc71)';
+  }
+
+  // Button visibility
+  if (startBtn && pauseBtn) {
+    startBtn.style.display = studyState.timer.running ? 'none' : 'block';
+    pauseBtn.style.display = studyState.timer.running ? 'block' : 'none';
+  }
+
+  if (switchBtn) {
+    switchBtn.textContent = isFocus ? '☕ Switch to Break' : '🎯 Switch to Focus';
+  }
+
+  // Sessions
+  const sessionsEl = document.getElementById('study-sessions-display');
+  if (sessionsEl) sessionsEl.textContent = studyState.sessions;
+}
+
+// ── Sync shared notes ────────────────────────
+function syncStudyNotes(value) {
+  clearTimeout(notesSyncTimeout);
+  notesSyncTimeout = setTimeout(async function() {
+    if (!studyState.code) return;
+    try {
+      await fetch('/api/study/' + studyState.code + '/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: value })
+      });
+    } catch(err) {}
+  }, 800);
+}
+
+// ── Copy study room code ─────────────────────
+function copyStudyCode() {
+  if (!studyState.code) return;
+  navigator.clipboard.writeText(studyState.code).then(() => showToast('Code copied: ' + studyState.code, 'success'));
+}
+
+// ── Socket handlers for study rooms ──────────
+function initStudySocketHandlers(socket) {
+  socket.on('study_joined', function(data) {
+    updateLocalTimer(data.timer, data.sessions);
+    const notesEl = document.getElementById('study-notes');
+    if (notesEl && data.notes) notesEl.value = data.notes;
+    const membersEl = document.getElementById('study-members-display');
+    if (membersEl) membersEl.textContent = data.members;
+  });
+
+  socket.on('study_timer_update', function(data) {
+    updateLocalTimer(data.timer, data.sessions);
+  });
+
+  socket.on('study_notes_updated', function(data) {
+    const notesEl = document.getElementById('study-notes');
+    if (notesEl && document.activeElement !== notesEl) {
+      notesEl.value = data.notes;
+    }
+  });
+
+  socket.on('study_member_update', function(data) {
+    const membersEl = document.getElementById('study-members-display');
+    if (membersEl) membersEl.textContent = data.members;
+  });
+
+  socket.on('study_error', function(data) {
+    showToast(data.message, 'error');
+  });
+}
+
+// ── Add study to switchPanel ──────────────────
+const _switchPanelStudy = window.switchPanel || switchPanel;
+window.switchPanel = function(name, navEl) {
+  _switchPanelStudy(name, navEl);
+  if (name === 'study') {
+    document.getElementById('topbar-title').textContent = '📚 Study Groups';
   }
 };
 </script>
