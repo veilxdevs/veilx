@@ -224,6 +224,161 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 // ════════════════════════════════════════════
+// VEILX Phase 5 Step 3 — Anonymous Polls
+// Polls expire after 48 hours
+// One vote per session per poll
+// ════════════════════════════════════════════
+
+const pollStore = new Map();
+// Structure: id -> {
+//   id, question, options: [{text, votes}],
+//   createdAt, expiresAt, totalVotes
+// }
+
+// ── Create a poll ────────────────────────────
+app.post('/api/polls/create', (req, res) => {
+  const { question, options } = req.body;
+
+  if (!question || typeof question !== 'string' || question.trim().length < 5) {
+    return res.status(400).json({ error: 'Question too short' });
+  }
+  if (!Array.isArray(options) || options.length < 2 || options.length > 4) {
+    return res.status(400).json({ error: 'Need 2–4 options' });
+  }
+
+  const id = Date.now().toString();
+  const cleanOptions = options
+    .map(o => ({ text: sanitize(String(o).trim(), 80), votes: 0 }))
+    .filter(o => o.text.length > 0);
+
+  if (cleanOptions.length < 2) {
+    return res.status(400).json({ error: 'Need at least 2 valid options' });
+  }
+
+  pollStore.set(id, {
+    id,
+    question: sanitize(question.trim(), 200),
+    options: cleanOptions,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + (48 * 60 * 60 * 1000), // 48 hours
+    totalVotes: 0
+  });
+
+  res.json({ success: true, id });
+});
+
+// ── Get all active polls ─────────────────────
+app.get('/api/polls', (req, res) => {
+  const now = Date.now();
+  const list = [];
+
+  for (const [id, poll] of pollStore.entries()) {
+    if (now > poll.expiresAt) {
+      pollStore.delete(id);
+      continue;
+    }
+    list.push({ ...poll });
+  }
+
+  list.sort((a, b) => b.createdAt - a.createdAt);
+  res.json({ polls: list.slice(0, 20) });
+});
+
+// ── Vote on a poll ───────────────────────────
+app.post('/api/polls/:id/vote', (req, res) => {
+  const poll = pollStore.get(req.params.id);
+  if (!poll) return res.status(404).json({ error: 'Poll not found or expired' });
+
+  if (Date.now() > poll.expiresAt) {
+    pollStore.delete(req.params.id);
+    return res.status(410).json({ error: 'Poll has expired' });
+  }
+
+  const { optionIndex } = req.body;
+  if (typeof optionIndex !== 'number' || optionIndex < 0 || optionIndex >= poll.options.length) {
+    return res.status(400).json({ error: 'Invalid option' });
+  }
+
+  poll.options[optionIndex].votes++;
+  poll.totalVotes++;
+
+  res.json({ success: true, options: poll.options, totalVotes: poll.totalVotes });
+});
+
+// ── Auto cleanup expired polls ───────────────
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, poll] of pollStore.entries()) {
+    if (now > poll.expiresAt) pollStore.delete(id);
+  }
+}, 60 * 60 * 1000);
+// ════════════════════════════════════════════
+// VEILX Phase 5 Step 2 — VEILX Feed
+// ════════════════════════════════════════════
+
+app.get('/api/feed', (req, res) => {
+  const { tab } = req.query;
+  const now = Date.now();
+  const sevenDays = 7 * 24 * 60 * 60 * 1000;
+  const items = [];
+
+  // Pull problems
+  for (const [id, p] of problemStore.entries()) {
+    if (now - p.createdAt > sevenDays) continue;
+    const ageMinutes = (now - p.createdAt) / 60000;
+    items.push({
+      id: 'prob_' + id, type: 'problem',
+      title: p.text.substring(0, 80) + (p.text.length > 80 ? '...' : ''),
+      body: p.text, category: p.cat,
+      votes: p.votes || 0, replies: p.replies || 0,
+      createdAt: p.createdAt,
+      score: calculateTrendScore(p.votes || 0, p.replies || 0, ageMinutes)
+    });
+  }
+
+  // Pull confessions
+  for (const [id, c] of confessionsStore.entries()) {
+    if (now - c.createdAt > sevenDays) continue;
+    const total = Object.values(c.reactions || {}).reduce((a, b) => a + b, 0);
+    const ageMinutes = (now - c.createdAt) / 60000;
+    items.push({
+      id: 'conf_' + id, confId: id, type: 'confession',
+      title: '"' + c.text.substring(0, 60) + (c.text.length > 60 ? '..."' : '"'),
+      body: c.text, category: c.category,
+      reactions: c.reactions, totalReactions: total,
+      createdAt: c.createdAt,
+      score: calculateTrendScore(total, 0, ageMinutes)
+    });
+  }
+
+  // Pull active public rooms
+  for (const [code, room] of publicRooms.entries()) {
+    if (now - room.lastActivity > 2 * 60 * 60 * 1000) continue;
+    const mainRoom = rooms.get(code);
+    const memberCount = mainRoom ? mainRoom.members.size : 0;
+    items.push({
+      id: 'room_' + code, code, type: 'room',
+      title: room.name,
+      body: room.description || 'Join the conversation',
+      category: room.type, members: memberCount,
+      createdAt: room.createdAt, lastActivity: room.lastActivity,
+      score: memberCount * 10 + (now - room.lastActivity < 300000 ? 50 : 0)
+    });
+  }
+
+  if (tab === 'new') {
+    items.sort((a, b) => b.createdAt - a.createdAt);
+  } else if (tab === 'community') {
+    const community = items.filter(i => i.type !== 'room');
+    community.sort((a, b) => (b.votes || b.totalReactions || 0) - (a.votes || a.totalReactions || 0));
+    return res.json({ items: community.slice(0, 30) });
+  } else {
+    items.sort((a, b) => b.score - a.score);
+  }
+
+  res.json({ items: items.slice(0, 30) });
+});
+// ════════════════════════════════════════════
 // VEILX Phase 5 Step 1 — Public Room Browser
 // ════════════════════════════════════════════
 

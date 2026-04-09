@@ -258,6 +258,8 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     </div>
     <div class="sidebar-section">Navigate</div>
     <div class="nav-item" onclick="switchPanel('browse',this)"><span class="nav-icon">🌐</span> Browse Rooms</div>
+    <div class="nav-item" onclick="switchPanel('feed',this)"><span class="nav-icon">📰</span> Feed</div>
+    <div class="nav-item" onclick="switchPanel('polls',this)"><span class="nav-icon">🎭</span> Polls</div>
     <div class="nav-item active" onclick="switchPanel('home',this)"><span class="nav-icon">🏠</span> Home</div>
     <div class="nav-item" onclick="switchPanel('rooms',this)"><span class="nav-icon">🚪</span> Rooms</div>
     <div class="nav-item" onclick="switchPanel('problems',this)"><span class="nav-icon">🆘</span> Ask Community</div>
@@ -460,6 +462,52 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         </div>
         <div id="game-area"></div>
       </div>
+      <!-- ══ POLLS PANEL ══ -->
+<div class="panel" id="panel-polls">
+
+  <div class="welcome-banner" style="background:linear-gradient(135deg,rgba(162,155,254,0.15),rgba(123,111,255,0.1))">
+    <div class="welcome-title">🎭 Anonymous Polls</div>
+    <div class="welcome-sub">Ask the community anything. Vote anonymously. Polls expire in 48 hours.</div>
+  </div>
+
+  <!-- Create Poll -->
+  <div class="post-box" style="margin-bottom:1.25rem">
+    <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.75rem">➕ CREATE A POLL</div>
+    <input id="poll-question" placeholder="Ask the community anything..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;color:var(--text);font-family:var(--display);font-size:0.875rem;outline:none;margin-bottom:0.6rem;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+    <div id="poll-options-container" style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.6rem">
+      <input class="poll-option-input" placeholder="Option 1..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.9rem;color:var(--text);font-family:var(--display);font-size:0.85rem;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      <input class="poll-option-input" placeholder="Option 2..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.9rem;color:var(--text);font-family:var(--display);font-size:0.85rem;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+    </div>
+    <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem">
+      <button onclick="addPollOption()" id="add-option-btn" style="background:transparent;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-family:var(--mono);font-size:0.65rem;padding:0.45rem 0.9rem;cursor:pointer">+ Add Option</button>
+      <span style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);line-height:2.2">Max 4 options · Expires 48hrs</span>
+    </div>
+    <button class="btn-sm btn-accent" onclick="createPoll()" style="width:100%">🎭 Post Poll Anonymously</button>
+  </div>
+
+  <!-- Polls List -->
+  <div id="polls-list">
+    <div style="text-align:center;padding:2rem;font-family:var(--mono);font-size:0.72rem;color:var(--muted)">Loading polls...</div>
+  </div>
+
+</div>
+      <!-- ══ FEED PANEL ══ -->
+<div class="panel" id="panel-feed">
+  <div class="welcome-banner" style="background:linear-gradient(135deg,rgba(255,107,157,0.12),rgba(123,111,255,0.1))">
+    <div class="welcome-title">📰 VEILX Feed</div>
+    <div class="welcome-sub">The best of everything — problems, confessions, active rooms. All in one place.</div>
+  </div>
+  <div style="display:flex;gap:0.5rem;margin-bottom:1rem;border-bottom:1px solid var(--border);padding-bottom:0.75rem">
+    <button id="feed-tab-hot" onclick="loadFeed('hot')" style="background:linear-gradient(135deg,var(--accent),#5a4fff);border:none;border-radius:8px;color:white;font-family:var(--display);font-size:0.8rem;font-weight:600;padding:0.5rem 1rem;cursor:pointer">🔥 Hot</button>
+    <button id="feed-tab-new" onclick="loadFeed('new')" style="background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--display);font-size:0.8rem;font-weight:600;padding:0.5rem 1rem;cursor:pointer">🕐 New</button>
+    <button id="feed-tab-community" onclick="loadFeed('community')" style="background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--display);font-size:0.8rem;font-weight:600;padding:0.5rem 1rem;cursor:pointer">👥 Community</button>
+    <button onclick="loadFeed(currentFeedTab)" style="margin-left:auto;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--mono);font-size:0.65rem;padding:0.5rem 0.75rem;cursor:pointer">↺</button>
+  </div>
+  <div id="feed-list">
+    <div style="text-align:center;padding:2rem;font-family:var(--mono);font-size:0.72rem;color:var(--muted)">Loading feed...</div>
+  </div>
+</div>
+
 <!-- ══ PUBLIC ROOM BROWSER PANEL ══ -->
 <div class="panel" id="panel-browse">
 
@@ -2394,6 +2442,286 @@ window.sendMessage = function() {
     fetch('/api/public-rooms/' + currentRoom.code + '/ping', { method: 'POST' }).catch(() => {});
   }
 };
+// ════════════════════════════════════════════
+// VEILX Phase 5 Step 2 — Feed JS
+// // ════════════════════════════════════════════
+
+let currentFeedTab = 'hot';
+
+async function loadFeed(tab) {
+  currentFeedTab = tab || 'hot';
+  ['hot','new','community'].forEach(function(t) {
+    const btn = document.getElementById('feed-tab-' + t);
+    if (!btn) return;
+    if (t === currentFeedTab) {
+      btn.style.background = 'linear-gradient(135deg,var(--accent),#5a4fff)';
+      btn.style.color = 'white'; btn.style.border = 'none';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--muted)';
+      btn.style.border = '1px solid var(--border)';
+    }
+  });
+
+  const container = document.getElementById('feed-list');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/api/feed?tab=' + currentFeedTab);
+    const data = await res.json();
+    if (!data.items || data.items.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:3rem"><div style="font-size:2rem;margin-bottom:0.75rem">📰</div><div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted)">Nothing here yet — post a problem or confession!</div></div>';
+      return;
+    }
+    container.innerHTML = data.items.map(renderFeedItem).join('');
+  } catch(err) {
+    container.innerHTML = '<div style="text-align:center;font-family:var(--mono);font-size:0.72rem;color:var(--muted);padding:2rem">Could not load feed.</div>';
+  }
+}
+
+function renderFeedItem(item) {
+  if (item.type === 'problem') {
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;margin-bottom:0.75rem">' +
+      '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.6rem">' +
+        '<span style="font-family:var(--mono);font-size:0.55rem;padding:2px 8px;border-radius:20px;background:rgba(255,79,123,0.15);color:var(--danger)">🆘 PROBLEM</span>' +
+        '<span style="font-family:var(--mono);font-size:0.55rem;padding:2px 8px;border-radius:20px;background:rgba(123,111,255,0.15);color:var(--accent)">' + escHtml(item.category) + '</span>' +
+        '<span style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);margin-left:auto">' + timeAgo(item.createdAt) + '</span>' +
+      '</div>' +
+      '<div style="font-size:0.88rem;line-height:1.6;color:var(--text);margin-bottom:0.75rem">' + escHtml(item.body) + '</div>' +
+      '<div style="display:flex;align-items:center;gap:0.75rem">' +
+        '<span style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)">▲ ' + (item.votes||0) + '</span>' +
+        '<span style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)">💬 ' + (item.replies||0) + '</span>' +
+        '<button onclick="switchPanel(\'problems\',null)" style="margin-left:auto;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-family:var(--mono);font-size:0.62rem;padding:0.25rem 0.65rem;cursor:pointer">Help →</button>' +
+      '</div>' +
+    '</div>';
+  }
+  if (item.type === 'confession') {
+    const topR = item.reactions ? Object.entries(item.reactions).sort((a,b)=>b[1]-a[1])[0] : null;
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;margin-bottom:0.75rem">' +
+      '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.6rem">' +
+        '<span style="font-family:var(--mono);font-size:0.55rem;padding:2px 8px;border-radius:20px;background:rgba(255,107,157,0.15);color:var(--accent2)">💭 CONFESSION</span>' +
+        '<span style="font-family:var(--mono);font-size:0.55rem;padding:2px 8px;border-radius:20px;background:rgba(123,111,255,0.15);color:var(--accent)">' + escHtml(item.category||'General') + '</span>' +
+        '<span style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);margin-left:auto">' + timeAgo(item.createdAt) + '</span>' +
+      '</div>' +
+      '<div style="font-size:0.9rem;line-height:1.7;color:var(--text);font-style:italic;margin-bottom:0.75rem">"' + escHtml(item.body) + '"</div>' +
+      '<div style="display:flex;align-items:center;gap:0.75rem">' +
+        (topR && topR[1] > 0 ? '<span style="font-size:0.85rem">' + topR[0] + ' ' + topR[1] + '</span>' : '') +
+        '<span style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)">' + (item.totalReactions||0) + ' reactions</span>' +
+        '<button onclick="switchPanel(\'confessions\',null)" style="margin-left:auto;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-family:var(--mono);font-size:0.62rem;padding:0.25rem 0.65rem;cursor:pointer">React →</button>' +
+      '</div>' +
+    '</div>';
+  }
+  if (item.type === 'room') {
+    const isActive = item.lastActivity && (Date.now()-item.lastActivity) < 5*60*1000;
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;margin-bottom:0.75rem">' +
+      '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.6rem">' +
+        '<span style="font-family:var(--mono);font-size:0.55rem;padding:2px 8px;border-radius:20px;background:rgba(79,255,176,0.15);color:var(--success)">🌐 LIVE ROOM</span>' +
+        (isActive ? '<span style="font-family:var(--mono);font-size:0.52rem;padding:2px 7px;border-radius:20px;background:rgba(79,255,176,0.1);color:var(--success)">ACTIVE</span>' : '') +
+        '<span style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);margin-left:auto">👥 ' + (item.members||0) + '</span>' +
+      '</div>' +
+      '<div style="font-size:0.9rem;font-weight:800;margin-bottom:0.25rem">' + escHtml(item.title) + '</div>' +
+      '<div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem">' + escHtml(item.body) + '</div>' +
+      '<button onclick="joinPublicRoom(\'' + item.code + '\',\'' + escHtml(item.category||'General') + '\')" style="background:linear-gradient(135deg,var(--accent),#5a4fff);border:none;border-radius:8px;color:white;font-family:var(--display);font-size:0.78rem;font-weight:600;padding:0.45rem 1rem;cursor:pointer">→ Join Room</button>' +
+    '</div>';
+  }
+  return '';
+}
+
+const _switchPanelFeed = window.switchPanel || switchPanel;
+window.switchPanel = function(name, navEl) {
+  _switchPanelFeed(name, navEl);
+  if (name === 'feed') {
+    document.getElementById('topbar-title').textContent = '📰 VEILX Feed';
+    loadFeed('hot');
+  }
+};
+// ════════════════════════════════════════════
+// VEILX Phase 5 Step 3 — Polls JS
+// ════════════════════════════════════════════
+
+let myVotes = JSON.parse(localStorage.getItem('veilx_votes') || '{}');
+let pollOptionCount = 2;
+
+// ── Add another option input ─────────────────
+function addPollOption() {
+  if (pollOptionCount >= 4) {
+    showToast('Max 4 options', 'error');
+    return;
+  }
+  pollOptionCount++;
+  const container = document.getElementById('poll-options-container');
+  if (!container) return;
+  const input = document.createElement('input');
+  input.className = 'poll-option-input';
+  input.placeholder = 'Option ' + pollOptionCount + '...';
+  input.style.cssText = 'width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.9rem;color:var(--text);font-family:var(--display);font-size:0.85rem;outline:none;box-sizing:border-box';
+  input.onfocus = function() { this.style.borderColor = 'var(--accent)'; };
+  input.onblur = function() { this.style.borderColor = 'var(--border)'; };
+  container.appendChild(input);
+  if (pollOptionCount >= 4) {
+    const btn = document.getElementById('add-option-btn');
+    if (btn) btn.style.display = 'none';
+  }
+}
+
+// ── Create a poll ────────────────────────────
+async function createPoll() {
+  const question = document.getElementById('poll-question')?.value.trim();
+  if (!question || question.length < 5) {
+    showToast('Write a question first', 'error');
+    return;
+  }
+
+  const optionEls = document.querySelectorAll('.poll-option-input');
+  const options = Array.from(optionEls)
+    .map(el => el.value.trim())
+    .filter(v => v.length > 0);
+
+  if (options.length < 2) {
+    showToast('Add at least 2 options', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/polls/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, options })
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error || 'Could not create poll', 'error'); return; }
+
+    // Reset form
+    document.getElementById('poll-question').value = '';
+    document.querySelectorAll('.poll-option-input').forEach(el => { el.value = ''; });
+    const extra = document.querySelectorAll('.poll-option-input');
+    for (let i = 2; i < extra.length; i++) extra[i].remove();
+    pollOptionCount = 2;
+    const addBtn = document.getElementById('add-option-btn');
+    if (addBtn) addBtn.style.display = 'block';
+
+    showToast('Poll posted anonymously! 🎭', 'success');
+    loadPolls();
+
+  } catch(err) {
+    showToast('Could not post poll', 'error');
+  }
+}
+
+// ── Load all polls ───────────────────────────
+async function loadPolls() {
+  const container = document.getElementById('polls-list');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/api/polls');
+    const data = await res.json();
+
+    if (!data.polls || data.polls.length === 0) {
+      container.innerHTML =
+        '<div style="text-align:center;padding:3rem">' +
+          '<div style="font-size:2rem;margin-bottom:0.75rem">🎭</div>' +
+          '<div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted)">No polls yet. Create the first one!</div>' +
+        '</div>';
+      return;
+    }
+
+    container.innerHTML = data.polls.map(renderPollCard).join('');
+
+  } catch(err) {
+    container.innerHTML =
+      '<div style="text-align:center;font-family:var(--mono);font-size:0.72rem;color:var(--muted);padding:2rem">Could not load polls.</div>';
+  }
+}
+
+// ── Render a poll card ────────────────────────
+function renderPollCard(poll) {
+  const hasVoted = myVotes[poll.id] !== undefined;
+  const expiry = Math.max(0, Math.floor((poll.expiresAt - Date.now()) / 3600000));
+  const expiryLabel = expiry < 1 ? 'Expires soon' : expiry + 'h left';
+
+  const optionsHTML = poll.options.map(function(opt, i) {
+    const pct = poll.totalVotes > 0 ? Math.round((opt.votes / poll.totalVotes) * 100) : 0;
+    const isMyVote = myVotes[poll.id] === i;
+
+    if (hasVoted) {
+      // Show results
+      return '<div style="margin-bottom:0.6rem">' +
+        '<div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:0.3rem">' +
+          '<span style="color:' + (isMyVote ? 'var(--accent)' : 'var(--text)') + ';font-weight:' + (isMyVote ? '700' : '400') + '">' +
+            (isMyVote ? '✓ ' : '') + escHtml(opt.text) +
+          '</span>' +
+          '<span style="font-family:var(--mono);font-size:0.65rem;color:' + (isMyVote ? 'var(--accent)' : 'var(--muted)') + '">' + pct + '%</span>' +
+        '</div>' +
+        '<div style="background:var(--surface2);border-radius:4px;height:8px;overflow:hidden">' +
+          '<div style="height:100%;background:' + (isMyVote ? 'linear-gradient(90deg,var(--accent),#5a4fff)' : 'rgba(123,111,255,0.3)') + ';width:' + pct + '%;border-radius:4px;transition:width 0.4s"></div>' +
+        '</div>' +
+      '</div>';
+    } else {
+      // Show vote buttons
+      return '<button onclick="voteOnPoll(\'' + poll.id + '\',' + i + ')" style="' +
+        'width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;' +
+        'padding:0.65rem 0.9rem;color:var(--text);font-family:var(--display);font-size:0.85rem;' +
+        'cursor:pointer;text-align:left;margin-bottom:0.45rem;transition:all 0.15s" ' +
+        'onmouseover="this.style.borderColor=\'var(--accent)\';this.style.color=\'var(--accent)\'" ' +
+        'onmouseout="this.style.borderColor=\'var(--border)\';this.style.color=\'var(--text)\'">' +
+        escHtml(opt.text) +
+      '</button>';
+    }
+  }).join('');
+
+  return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;margin-bottom:0.85rem">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">' +
+      '<div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted)">🎭 Anonymous Poll</div>' +
+      '<div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted)">⏱ ' + expiryLabel + '</div>' +
+    '</div>' +
+    '<div style="font-size:0.92rem;font-weight:700;margin-bottom:0.85rem;line-height:1.5">' + escHtml(poll.question) + '</div>' +
+    optionsHTML +
+    (hasVoted ?
+      '<div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-top:0.5rem;text-align:right">' + poll.totalVotes + ' votes</div>' :
+      '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);margin-top:0.35rem">' + poll.totalVotes + ' votes · Results shown after voting</div>'
+    ) +
+  '</div>';
+}
+
+// ── Vote on a poll ────────────────────────────
+async function voteOnPoll(pollId, optionIndex) {
+  if (myVotes[pollId] !== undefined) {
+    showToast('Already voted on this poll', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/polls/' + pollId + '/vote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ optionIndex })
+    });
+
+    if (res.ok) {
+      myVotes[pollId] = optionIndex;
+      localStorage.setItem('veilx_votes', JSON.stringify(myVotes));
+      showToast('Vote cast anonymously ✓', 'success');
+      loadPolls();
+    } else {
+      const data = await res.json();
+      showToast(data.error || 'Could not vote', 'error');
+    }
+  } catch(err) {
+    showToast('Could not vote. Try again.', 'error');
+  }
+}
+
+// ── Hook into switchPanel ─────────────────────
+const _switchPanelPolls = window.switchPanel || switchPanel;
+window.switchPanel = function(name, navEl) {
+  _switchPanelPolls(name, navEl);
+  if (name === 'polls') {
+    document.getElementById('topbar-title').textContent = '🎭 Anonymous Polls';
+    loadPolls();
+  }
+};
+
 </script>
 </body>
 </html>
