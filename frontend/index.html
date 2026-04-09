@@ -265,6 +265,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <div class="nav-item" onclick="switchPanel('chatbot',this)"><span class="nav-icon">🤖</span> VEX Assistant</div>
     <div class="nav-item" onclick="switchPanel('confessions',this)"><span class="nav-icon">💭</span> Confessions</div>
     <div class="nav-item" onclick="switchPanel('study',this)"><span class="nav-icon">📚</span> Study Groups</div> 
+    <div class="nav-item" onclick="switchPanel('analytics',this)"><span class="nav-icon">📊</span> My Stats</div>
     <div class="sidebar-section">Account</div>
     <div class="nav-item" onclick="switchPanel('premium',this)"><span class="nav-icon">⚡</span> Go Premium</div>
     <div class="nav-item" onclick="switchPanel('settings',this)"><span class="nav-icon">⚙️</span> Settings</div>
@@ -455,6 +456,58 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         </div>
         <div id="game-area"></div>
       </div>
+<!-- ══ ANALYTICS PANEL ══ -->
+<div class="panel" id="panel-analytics">
+
+  <!-- Header -->
+  <div class="welcome-banner" style="background:linear-gradient(135deg,rgba(91,200,255,0.12),rgba(123,111,255,0.1))">
+    <div class="welcome-title">📊 My Stats</div>
+    <div class="welcome-sub">Your anonymous usage — stored only on this device. Never sent to any server.</div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.75rem;margin-bottom:1.25rem" id="stats-grid">
+    <!-- filled by JS -->
+  </div>
+
+  <!-- Activity Chart -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;margin-bottom:1.1rem">
+    <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:2px;margin-bottom:1rem">📅 ACTIVITY — LAST 7 DAYS</div>
+    <div id="activity-chart" style="display:flex;align-items:flex-end;gap:0.4rem;height:80px"></div>
+    <div id="activity-labels" style="display:flex;gap:0.4rem;margin-top:0.4rem"></div>
+  </div>
+
+  <!-- Breakdown -->
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.75rem;margin-bottom:1.1rem">
+
+    <!-- Top categories -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem">
+      <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.75rem">🏷 TOP CATEGORIES</div>
+      <div id="categories-breakdown"></div>
+    </div>
+
+    <!-- Sessions -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem">
+      <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.75rem">🎯 STUDY STATS</div>
+      <div id="study-breakdown"></div>
+    </div>
+
+  </div>
+
+  <!-- Streak -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;margin-bottom:1.1rem">
+    <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.75rem">🔥 CURRENT STREAK</div>
+    <div id="streak-display" style="display:flex;align-items:center;gap:1rem">
+      <!-- filled by JS -->
+    </div>
+  </div>
+
+  <!-- Reset button -->
+  <button onclick="resetAnalytics()" style="background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--mono);font-size:0.65rem;padding:0.5rem 1rem;cursor:pointer;width:100%">
+    🗑 Reset My Stats
+  </button>
+
+</div>
       <!-- ══ STUDY GROUPS PANEL ══ -->
 <div class="panel" id="panel-study">
 
@@ -1533,6 +1586,273 @@ window.switchPanel = function(name, navEl) {
   if (name === 'study') {
     document.getElementById('topbar-title').textContent = '📚 Study Groups';
   }
+};
+// ════════════════════════════════════════════
+// VEILX Phase 4 Step 4 — Analytics Dashboard
+// All local — never sent to server
+// ════════════════════════════════════════════
+
+// ── Analytics data structure ─────────────────
+function getAnalytics() {
+  try {
+    return JSON.parse(localStorage.getItem('veilx_analytics') || '{}');
+  } catch(e) { return {}; }
+}
+
+function saveAnalytics(data) {
+  localStorage.setItem('veilx_analytics', JSON.stringify(data));
+}
+
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+}
+
+// ── Track an event ────────────────────────────
+function trackEvent(type, meta) {
+  const data = getAnalytics();
+  const today = getTodayKey();
+
+  if (!data.events) data.events = {};
+  if (!data.events[today]) data.events[today] = {};
+  if (!data.events[today][type]) data.events[today][type] = 0;
+  data.events[today][type]++;
+
+  // Track totals
+  if (!data.totals) data.totals = {};
+  if (!data.totals[type]) data.totals[type] = 0;
+  data.totals[type]++;
+
+  // Track categories
+  if (meta && meta.category) {
+    if (!data.categories) data.categories = {};
+    if (!data.categories[meta.category]) data.categories[meta.category] = 0;
+    data.categories[meta.category]++;
+  }
+
+  // Track streak
+  if (!data.streak) data.streak = { lastDay: null, count: 0, longest: 0 };
+  if (data.streak.lastDay !== today) {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yKey = yesterday.toISOString().slice(0, 10);
+    if (data.streak.lastDay === yKey) {
+      data.streak.count++;
+    } else {
+      data.streak.count = 1;
+    }
+    data.streak.lastDay = today;
+    data.streak.longest = Math.max(data.streak.longest, data.streak.count);
+  }
+
+  // Track study time
+  if (type === 'study_focus' && meta && meta.minutes) {
+    if (!data.studyMinutes) data.studyMinutes = 0;
+    data.studyMinutes += meta.minutes;
+  }
+
+  saveAnalytics(data);
+}
+
+// ── Hook into existing functions ──────────────
+const _sendMessageTrack = window.sendMessage || sendMessage;
+window.sendMessage = function() {
+  trackEvent('messages_sent');
+  _sendMessageTrack();
+};
+
+const _postProblemTrack = window.postProblem || postProblem;
+window.postProblem = async function() {
+  trackEvent('problems_posted', { category: selectedCat });
+  return _postProblemTrack();
+};
+
+const _postConfessionTrack = window.postConfession || postConfession;
+window.postConfession = async function() {
+  trackEvent('confessions_posted');
+  return _postConfessionTrack();
+};
+
+const _createRoomTrack = window.createRoom || createRoom;
+window.createRoom = function() {
+  trackEvent('rooms_created');
+  _createRoomTrack();
+};
+
+const _sendChatbotTrack = window.sendChatbotMessage || sendChatbotMessage;
+window.sendChatbotMessage = async function() {
+  trackEvent('vex_messages');
+  return _sendChatbotTrack();
+};
+
+// Track study sessions
+const _timerCompleteTrack = window.timerComplete || timerComplete;
+window.timerComplete = function() {
+  if (studyState && studyState.timer && studyState.timer.mode === 'focus') {
+    trackEvent('study_sessions');
+    trackEvent('study_focus', { minutes: 25 });
+  }
+  _timerCompleteTrack();
+};
+
+// ── Render analytics dashboard ────────────────
+function renderAnalytics() {
+  const data = getAnalytics();
+  const totals = data.totals || {};
+  const streak = data.streak || { count: 0, longest: 0 };
+  const studyMins = data.studyMinutes || 0;
+
+  // ── Stats grid ──
+  const statsGrid = document.getElementById('stats-grid');
+  if (statsGrid) {
+    const stats = [
+      { icon: '💬', label: 'Messages Sent', value: totals.messages_sent || 0, color: 'var(--accent)' },
+      { icon: '🚪', label: 'Rooms Created', value: totals.rooms_created || 0, color: 'var(--success)' },
+      { icon: '🆘', label: 'Problems Posted', value: totals.problems_posted || 0, color: 'var(--accent2)' },
+      { icon: '🤖', label: 'VEX Chats', value: totals.vex_messages || 0, color: '#5bc8ff' },
+      { icon: '💭', label: 'Confessions', value: totals.confessions_posted || 0, color: '#a29bfe' },
+      { icon: '📚', label: 'Study Sessions', value: totals.study_sessions || 0, color: '#4fffb0' },
+    ];
+
+    statsGrid.innerHTML = stats.map(function(s) {
+      return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem">' +
+        '<div style="font-size:1.4rem;margin-bottom:0.4rem">' + s.icon + '</div>' +
+        '<div style="font-size:1.6rem;font-weight:800;color:' + s.color + ';font-family:var(--mono)">' + s.value + '</div>' +
+        '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);margin-top:0.2rem">' + s.label + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // ── Activity chart ──
+  const chartEl = document.getElementById('activity-chart');
+  const labelsEl = document.getElementById('activity-labels');
+  if (chartEl && labelsEl) {
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      days.push(d.toISOString().slice(0, 10));
+    }
+
+    const dayTotals = days.map(function(day) {
+      const events = (data.events && data.events[day]) || {};
+      return Object.values(events).reduce(function(a, b) { return a + b; }, 0);
+    });
+
+    const maxVal = Math.max(...dayTotals, 1);
+
+    chartEl.innerHTML = dayTotals.map(function(val, i) {
+      const pct = Math.max(4, Math.round((val / maxVal) * 100));
+      const isToday = i === 6;
+      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">' +
+        '<div style="font-family:var(--mono);font-size:0.55rem;color:var(--muted)">' + (val || '') + '</div>' +
+        '<div style="width:100%;background:' + (isToday ? 'var(--accent)' : 'rgba(123,111,255,0.3)') + ';border-radius:4px 4px 0 0;height:' + pct + '%;min-height:4px;transition:height 0.3s"></div>' +
+      '</div>';
+    }).join('');
+
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    labelsEl.innerHTML = days.map(function(day, i) {
+      const d = new Date(day + 'T00:00:00');
+      const isToday = i === 6;
+      return '<div style="flex:1;text-align:center;font-family:var(--mono);font-size:0.55rem;color:' + (isToday ? 'var(--accent)' : 'var(--muted)') + '">' +
+        (isToday ? 'Today' : dayNames[d.getDay()]) +
+      '</div>';
+    }).join('');
+  }
+
+  // ── Categories breakdown ──
+  const catsEl = document.getElementById('categories-breakdown');
+  if (catsEl) {
+    const cats = data.categories || {};
+    const sorted = Object.entries(cats).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 5);
+    const total = Object.values(cats).reduce(function(a, b) { return a + b; }, 0) || 1;
+
+    if (sorted.length === 0) {
+      catsEl.innerHTML = '<div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)">No data yet</div>';
+    } else {
+      catsEl.innerHTML = sorted.map(function(entry) {
+        const pct = Math.round((entry[1] / total) * 100);
+        return '<div style="margin-bottom:0.6rem">' +
+          '<div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:0.65rem;margin-bottom:0.2rem">' +
+            '<span style="color:var(--text)">' + entry[0] + '</span>' +
+            '<span style="color:var(--muted)">' + pct + '%</span>' +
+          '</div>' +
+          '<div style="background:var(--surface2);border-radius:4px;height:5px;overflow:hidden">' +
+            '<div style="background:var(--accent);height:100%;width:' + pct + '%;border-radius:4px;transition:width 0.4s"></div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+  }
+
+  // ── Study breakdown ──
+  const studyEl = document.getElementById('study-breakdown');
+  if (studyEl) {
+    const hours = Math.floor(studyMins / 60);
+    const mins = studyMins % 60;
+    const sessions = totals.study_sessions || 0;
+
+    studyEl.innerHTML =
+      '<div style="margin-bottom:0.6rem">' +
+        '<div style="font-size:1.4rem;font-weight:800;color:var(--success);font-family:var(--mono)">' +
+          (hours > 0 ? hours + 'h ' : '') + mins + 'm' +
+        '</div>' +
+        '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted)">Total focus time</div>' +
+      '</div>' +
+      '<div style="margin-bottom:0.6rem">' +
+        '<div style="font-size:1.2rem;font-weight:800;color:var(--accent);font-family:var(--mono)">' + sessions + '</div>' +
+        '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted)">Pomodoros done</div>' +
+      '</div>' +
+      '<div>' +
+        '<div style="font-size:1rem;font-weight:800;color:#a29bfe;font-family:var(--mono)">' + (sessions * 25) + 'm</div>' +
+        '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted)">Pure focus time</div>' +
+      '</div>';
+  }
+
+  // ── Streak ──
+  const streakEl = document.getElementById('streak-display');
+  if (streakEl) {
+    streakEl.innerHTML =
+      '<div style="text-align:center">' +
+        '<div style="font-size:2rem">🔥</div>' +
+        '<div style="font-size:1.8rem;font-weight:800;color:#ff6b35;font-family:var(--mono)">' + streak.count + '</div>' +
+        '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted)">Day streak</div>' +
+      '</div>' +
+      '<div style="flex:1;background:var(--surface2);border-radius:var(--radius);padding:0.85rem;margin-left:0.5rem">' +
+        '<div style="font-family:var(--mono);font-size:0.68rem;color:var(--text);margin-bottom:0.35rem">🏆 Longest: <span style="color:var(--accent)">' + streak.longest + ' days</span></div>' +
+        '<div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)">Keep going! Every day counts.</div>' +
+        (streak.count >= 3 ?
+          '<div style="font-family:var(--mono);font-size:0.62rem;color:var(--success);margin-top:0.35rem">✓ On a roll!</div>' :
+          '<div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-top:0.35rem">Use VEILX daily to build a streak</div>'
+        ) +
+      '</div>';
+  }
+}
+
+// ── Reset analytics ───────────────────────────
+function resetAnalytics() {
+  if (!confirm('Reset all your stats? This cannot be undone.')) return;
+  localStorage.removeItem('veilx_analytics');
+  renderAnalytics();
+  showToast('Stats reset', 'success');
+}
+
+// ── Hook into switchPanel ─────────────────────
+const _switchPanelAnalytics = window.switchPanel || switchPanel;
+window.switchPanel = function(name, navEl) {
+  _switchPanelAnalytics(name, navEl);
+  if (name === 'analytics') {
+    document.getElementById('topbar-title').textContent = '📊 My Stats';
+    // Track that user visited analytics today
+    trackEvent('app_opens');
+    renderAnalytics();
+  }
+};
+
+// ── Track app open on login ───────────────────
+const _enterAppAnalytics = window.enterApp || enterApp;
+window.enterApp = function() {
+  _enterAppAnalytics();
+  trackEvent('app_opens');
 };
 </script>
 </body>
