@@ -224,8 +224,113 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 // ════════════════════════════════════════════
+// VEILX Phase 5 Step 1 — Public Room Browser
+// ════════════════════════════════════════════
+
+const publicRooms = new Map();
+// Structure: code -> {
+//   code, name, type, description,
+//   members: number, maxMembers: 20,
+//   createdAt, lastActivity, tags: []
+// }
+
+// ── Create a public room ─────────────────────
+app.post('/api/public-rooms/create', (req, res) => {
+  const { name, type, description, tags } = req.body;
+
+  if (!name || typeof name !== 'string' || name.trim().length < 3) {
+    return res.status(400).json({ error: 'Room name must be at least 3 characters' });
+  }
+
+  const code = crypto.randomBytes(3).toString('hex').toUpperCase();
+
+  const cleanTags = Array.isArray(tags)
+    ? tags.slice(0, 5).map(t => sanitize(String(t), 20))
+    : [];
+
+  publicRooms.set(code, {
+    code,
+    name: sanitize(name.trim(), 50),
+    type: sanitize(type || 'General', 30),
+    description: sanitize(description || '', 120),
+    members: 0,
+    maxMembers: 20,
+    createdAt: Date.now(),
+    lastActivity: Date.now(),
+    tags: cleanTags,
+    active: true
+  });
+
+  // Also register in main rooms map
+  rooms.set(code, createRoomRecord(code, type || 'General'));
+
+  res.json({ success: true, code, name: publicRooms.get(code).name });
+});
+
+// ── Get all public rooms ─────────────────────
+app.get('/api/public-rooms', (req, res) => {
+  const { type, sort } = req.query;
+  const now = Date.now();
+  const twoHours = 2 * 60 * 60 * 1000;
+
+  const list = [];
+
+  for (const [code, room] of publicRooms.entries()) {
+    // Remove stale rooms (no activity in 2 hours)
+    if (now - room.lastActivity > twoHours) {
+      publicRooms.delete(code);
+      continue;
+    }
+
+    // Sync member count from main rooms map
+    const mainRoom = rooms.get(code);
+    if (mainRoom) room.members = mainRoom.members.size;
+
+    // Filter by type if specified
+    if (type && type !== 'All' && room.type !== type) continue;
+
+    list.push({ ...room, members: room.members });
+  }
+
+  // Sort
+  if (sort === 'active') {
+    list.sort((a, b) => b.lastActivity - a.lastActivity);
+  } else if (sort === 'popular') {
+    list.sort((a, b) => b.members - a.members);
+  } else {
+    // Default: newest first
+    list.sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  res.json({ rooms: list });
+});
+
+// ── Update room activity (called when message sent) ──
+app.post('/api/public-rooms/:code/ping', (req, res) => {
+  const room = publicRooms.get(req.params.code.toUpperCase());
+  if (!room) return res.status(404).json({ error: 'Not found' });
+  room.lastActivity = Date.now();
+  res.json({ success: true });
+});
+
+// ── Delete a public room ─────────────────────
+app.delete('/api/public-rooms/:code', (req, res) => {
+  publicRooms.delete(req.params.code.toUpperCase());
+  res.json({ success: true });
+});
+
+// ── Auto-cleanup stale public rooms ──────────
+setInterval(() => {
+  const now = Date.now();
+  const twoHours = 2 * 60 * 60 * 1000;
+  for (const [code, room] of publicRooms.entries()) {
+    if (now - room.lastActivity > twoHours) {
+      publicRooms.delete(code);
+    }
+  }
+}, 30 * 60 * 1000);
+// ════════════════════════════════════════════
 // VEILX Phase 4 Step 3 — Study Groups
-// Add this block after /api/health route
 // Pomodoro timer + shared notes per room
 // ════════════════════════════════════════════
 

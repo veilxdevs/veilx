@@ -257,6 +257,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       </div>
     </div>
     <div class="sidebar-section">Navigate</div>
+    <div class="nav-item" onclick="switchPanel('browse',this)"><span class="nav-icon">🌐</span> Browse Rooms</div>
     <div class="nav-item active" onclick="switchPanel('home',this)"><span class="nav-icon">🏠</span> Home</div>
     <div class="nav-item" onclick="switchPanel('rooms',this)"><span class="nav-icon">🚪</span> Rooms</div>
     <div class="nav-item" onclick="switchPanel('problems',this)"><span class="nav-icon">🆘</span> Ask Community</div>
@@ -459,6 +460,62 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         </div>
         <div id="game-area"></div>
       </div>
+<!-- ══ PUBLIC ROOM BROWSER PANEL ══ -->
+<div class="panel" id="panel-browse">
+
+  <!-- Header -->
+  <div class="welcome-banner" style="background:linear-gradient(135deg,rgba(91,200,255,0.12),rgba(79,255,176,0.08))">
+    <div class="welcome-title">🌐 Browse Rooms</div>
+    <div class="welcome-sub">Discover live public rooms. Join instantly — no code needed.</div>
+  </div>
+
+  <!-- Create Public Room -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;margin-bottom:1.1rem">
+    <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.75rem">➕ CREATE PUBLIC ROOM</div>
+    <div style="display:flex;flex-direction:column;gap:0.6rem">
+      <input id="pub-room-name" placeholder="Room name (e.g. Late Night Chill, CA Students...)" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;color:var(--text);font-family:var(--display);font-size:0.85rem;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      <input id="pub-room-desc" placeholder="Short description (optional)..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.9rem;color:var(--text);font-family:var(--display);font-size:0.82rem;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+      <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center">
+        <select id="pub-room-type" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.75rem;color:var(--text);font-family:var(--mono);font-size:0.72rem;outline:none;cursor:pointer;flex:1">
+          <option value="General">💬 General</option>
+          <option value="Study">📚 Study</option>
+          <option value="Help">🆘 Help</option>
+          <option value="Debate">🧠 Debate</option>
+          <option value="Chill">😌 Chill</option>
+          <option value="Tech">💻 Tech</option>
+          <option value="Gaming">🎮 Gaming</option>
+          <option value="Rant">🔥 Rant</option>
+        </select>
+        <button class="btn-sm btn-accent" onclick="createPublicRoom()" style="flex:1">🌐 Create Public Room</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
+    <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);margin-right:0.25rem">FILTER:</div>
+    <div id="browse-filters" style="display:flex;gap:0.4rem;flex-wrap:wrap;flex:1">
+      <button onclick="filterPublicRooms('All')" class="chip selected" id="filter-All">All</button>
+      <button onclick="filterPublicRooms('Study')" class="chip" id="filter-Study">📚 Study</button>
+      <button onclick="filterPublicRooms('Help')" class="chip" id="filter-Help">🆘 Help</button>
+      <button onclick="filterPublicRooms('Chill')" class="chip" id="filter-Chill">😌 Chill</button>
+      <button onclick="filterPublicRooms('Tech')" class="chip" id="filter-Tech">💻 Tech</button>
+      <button onclick="filterPublicRooms('Gaming')" class="chip" id="filter-Gaming">🎮 Gaming</button>
+    </div>
+    <select id="browse-sort" onchange="loadPublicRooms()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.6rem;color:var(--text);font-family:var(--mono);font-size:0.65rem;outline:none;cursor:pointer">
+      <option value="newest">🕐 Newest</option>
+      <option value="active">⚡ Active</option>
+      <option value="popular">👥 Popular</option>
+    </select>
+    <button onclick="loadPublicRooms()" style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.65rem;color:var(--muted);font-family:var(--mono);font-size:0.65rem;cursor:pointer">↺ Refresh</button>
+  </div>
+
+  <!-- Rooms List -->
+  <div id="public-rooms-list">
+    <div style="text-align:center;padding:2rem;font-family:var(--mono);font-size:0.72rem;color:var(--muted)">Loading rooms...</div>
+  </div>
+
+</div>
 <!-- ══ ANALYTICS PANEL ══ -->
 <div class="panel" id="panel-analytics">
 
@@ -2139,6 +2196,203 @@ window.enterApp = function() {
   }
 
   startSmartNotifications();
+};
+// ════════════════════════════════════════════
+// VEILX Phase 5 Step 1 — Public Room Browser JS
+// ════════════════════════════════════════════
+
+let browseFilter = 'All';
+let browseAutoRefresh = null;
+
+// ── Create a public room ─────────────────────
+async function createPublicRoom() {
+  const name = document.getElementById('pub-room-name')?.value.trim();
+  const desc = document.getElementById('pub-room-desc')?.value.trim();
+  const type = document.getElementById('pub-room-type')?.value || 'General';
+
+  if (!name || name.length < 3) {
+    showToast('Room name must be at least 3 characters', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/public-rooms/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description: desc, type })
+    });
+
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error || 'Could not create room', 'error'); return; }
+
+    // Clear inputs
+    document.getElementById('pub-room-name').value = '';
+    document.getElementById('pub-room-desc').value = '';
+
+    showToast('Public room created! Code: ' + data.code, 'success');
+    addNotification('room', 'Public room live!', '"' + data.name + '" is now visible to everyone', null);
+
+    // Join the room immediately
+    openChatRoom(data.code, type, true);
+
+    // Reload list
+    loadPublicRooms();
+
+  } catch(err) {
+    showToast('Could not create room. Try again.', 'error');
+  }
+}
+
+// ── Load public rooms ────────────────────────
+async function loadPublicRooms() {
+  const container = document.getElementById('public-rooms-list');
+  if (!container) return;
+
+  const sort = document.getElementById('browse-sort')?.value || 'newest';
+  const typeParam = browseFilter !== 'All' ? '&type=' + browseFilter : '';
+
+  try {
+    const res = await fetch('/api/public-rooms?sort=' + sort + typeParam);
+    const data = await res.json();
+
+    if (!data.rooms || data.rooms.length === 0) {
+      container.innerHTML =
+        '<div style="text-align:center;padding:3rem">' +
+          '<div style="font-size:2rem;margin-bottom:0.75rem">🌐</div>' +
+          '<div style="font-family:var(--mono);font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem">No public rooms right now</div>' +
+          '<div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)">Create one above and be the first!</div>' +
+        '</div>';
+      return;
+    }
+
+    container.innerHTML = data.rooms.map(function(room) {
+      return renderPublicRoomCard(room);
+    }).join('');
+
+  } catch(err) {
+    container.innerHTML =
+      '<div style="text-align:center;padding:2rem;font-family:var(--mono);font-size:0.72rem;color:var(--muted)">' +
+        'Could not load rooms. Check connection.' +
+      '</div>';
+  }
+}
+
+// ── Render a room card ────────────────────────
+function renderPublicRoomCard(room) {
+  const typeIcons = {
+    'General':'💬','Study':'📚','Help':'🆘','Debate':'🧠',
+    'Chill':'😌','Tech':'💻','Gaming':'🎮','Rant':'🔥'
+  };
+  const icon = typeIcons[room.type] || '💬';
+  const isFull = room.members >= room.maxMembers;
+  const memberPct = Math.min(100, Math.round((room.members / room.maxMembers) * 100));
+  const activityLabel = timeAgo(room.lastActivity);
+  const isActive = (Date.now() - room.lastActivity) < 5 * 60 * 1000;
+
+  return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;margin-bottom:0.75rem;transition:border-color 0.2s" onmouseover="this.style.borderColor=\'rgba(123,111,255,0.4)\'" onmouseout="this.style.borderColor=\'var(--border)\'">' +
+
+    '<div style="display:flex;align-items:flex-start;gap:0.85rem">' +
+
+      '<div style="width:44px;height:44px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0">' +
+        icon +
+      '</div>' +
+
+      '<div style="flex:1;min-width:0">' +
+
+        '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;flex-wrap:wrap">' +
+          '<div style="font-size:0.9rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHtml(room.name) + '</div>' +
+          '<div style="font-family:var(--mono);font-size:0.55rem;padding:2px 8px;border-radius:20px;background:rgba(123,111,255,0.15);color:var(--accent);flex-shrink:0">' + room.type + '</div>' +
+          (isActive ? '<div style="font-family:var(--mono);font-size:0.52rem;padding:2px 7px;border-radius:20px;background:rgba(79,255,176,0.15);color:var(--success);flex-shrink:0">ACTIVE</div>' : '') +
+        '</div>' +
+
+        (room.description ?
+          '<div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;line-height:1.4">' + escHtml(room.description) + '</div>' :
+          ''
+        ) +
+
+        '<div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.6rem">' +
+          '<div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted)">' +
+            '<span style="color:' + (room.members > 0 ? 'var(--success)' : 'var(--muted)') + '">👥 ' + room.members + '</span> / ' + room.maxMembers +
+          '</div>' +
+          '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted)">⏱ ' + activityLabel + '</div>' +
+          '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted)">🔑 ' + room.code + '</div>' +
+        '</div>' +
+
+        '<div style="background:var(--surface2);border-radius:4px;height:4px;margin-bottom:0.75rem;overflow:hidden">' +
+          '<div style="height:100%;background:' + (isFull ? 'var(--danger)' : 'var(--accent)') + ';width:' + memberPct + '%;border-radius:4px;transition:width 0.3s"></div>' +
+        '</div>' +
+
+        '<button onclick="joinPublicRoom(\'' + room.code + '\',\'' + escHtml(room.type) + '\')" ' +
+          (isFull ? 'disabled ' : '') +
+          'style="background:' + (isFull ? 'transparent' : 'linear-gradient(135deg,var(--accent),#5a4fff)') + ';' +
+          'border:' + (isFull ? '1px solid var(--border)' : 'none') + ';' +
+          'border-radius:8px;color:' + (isFull ? 'var(--muted)' : 'white') + ';' +
+          'font-family:var(--display);font-size:0.8rem;font-weight:600;' +
+          'padding:0.5rem 1.1rem;cursor:' + (isFull ? 'not-allowed' : 'pointer') + ';' +
+          'transition:all 0.15s">' +
+          (isFull ? '🚫 Full' : '→ Join Room') +
+        '</button>' +
+
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+// ── Join a public room ────────────────────────
+function joinPublicRoom(code, type) {
+  openChatRoom(code, type || 'General', false);
+  // Ping activity
+  fetch('/api/public-rooms/' + code + '/ping', { method: 'POST' }).catch(() => {});
+}
+
+// ── Filter rooms by type ──────────────────────
+function filterPublicRooms(type) {
+  browseFilter = type;
+
+  // Update filter button styles
+  document.querySelectorAll('#browse-filters .chip').forEach(function(btn) {
+    btn.classList.remove('selected');
+  });
+  const activeBtn = document.getElementById('filter-' + type);
+  if (activeBtn) activeBtn.classList.add('selected');
+
+  loadPublicRooms();
+}
+
+// ── Auto-refresh every 30 seconds ────────────
+function startBrowseAutoRefresh() {
+  if (browseAutoRefresh) clearInterval(browseAutoRefresh);
+  browseAutoRefresh = setInterval(function() {
+    const panel = document.getElementById('panel-browse');
+    if (panel && panel.classList.contains('active')) {
+      loadPublicRooms();
+    }
+  }, 30000);
+}
+
+// ── Hook into switchPanel ─────────────────────
+const _switchPanelBrowse = window.switchPanel || switchPanel;
+window.switchPanel = function(name, navEl) {
+  _switchPanelBrowse(name, navEl);
+  if (name === 'browse') {
+    document.getElementById('topbar-title').textContent = '🌐 Browse Rooms';
+    loadPublicRooms();
+    startBrowseAutoRefresh();
+  } else {
+    if (browseAutoRefresh) {
+      clearInterval(browseAutoRefresh);
+      browseAutoRefresh = null;
+    }
+  }
+};
+
+// ── Ping public room on message send ─────────
+const _sendMessageBrowse = window.sendMessage || sendMessage;
+window.sendMessage = function() {
+  _sendMessageBrowse();
+  if (currentRoom) {
+    fetch('/api/public-rooms/' + currentRoom.code + '/ping', { method: 'POST' }).catch(() => {});
+  }
 };
 </script>
 </body>
