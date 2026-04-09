@@ -278,7 +278,10 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <div class="topbar" id="topbar">
       <div class="topbar-title" id="topbar-title">Home</div>
       <div class="topbar-actions">
-        <button class="icon-btn" onclick="toggleLanguage()" id="lang-btn">🌐 हिंदी</button>
+  <button class="icon-btn" onclick="toggleLanguage()" id="lang-btn">🌐 हिंदी</button>
+  <button class="icon-btn" onclick="toggleNotifPanel()" id="notif-btn" style="position:relative">
+    🔔 <span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--danger);color:white;border-radius:50%;width:16px;height:16px;font-size:0.5rem;display:flex;align-items:center;justify-content:center;font-family:var(--mono)">0</span>
+  </button>
         <button class="icon-btn" onclick="showKeyModal()">🔑 Key</button>
         <button class="icon-btn" onclick="logout()">← Exit</button>
       </div>
@@ -794,7 +797,33 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <button class="btn btn-secondary" onclick="closeModal('report-modal')">Cancel</button>
   </div>
 </div>
-
+<!-- ══ NOTIFICATIONS PANEL ══ -->
+<div id="notif-panel" style="
+  display:none;
+  position:fixed;
+  top:56px;
+  right:1rem;
+  width:320px;
+  max-height:420px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:0 8px 32px rgba(0,0,0,0.4);
+  z-index:400;
+  overflow:hidden;
+  animation:fadeUp 0.15s ease;
+">
+  <!-- Header -->
+  <div style="padding:0.75rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2)">
+    <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);letter-spacing:2px">🔔 NOTIFICATIONS</div>
+    <div style="display:flex;gap:0.5rem;align-items:center">
+      <button onclick="markAllRead()" style="background:transparent;border:none;font-family:var(--mono);font-size:0.58rem;color:var(--muted);cursor:pointer">Mark all read</button>
+      <button onclick="toggleNotifPanel()" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem">✕</button>
+    </div>
+  </div>
+  <!-- List -->
+  <div id="notif-list" style="overflow-y:auto;max-height:360px"></div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1853,6 +1882,263 @@ const _enterAppAnalytics = window.enterApp || enterApp;
 window.enterApp = function() {
   _enterAppAnalytics();
   trackEvent('app_opens');
+};
+// ════════════════════════════════════════════
+// VEILX Phase 4 Step 5 — Smart Notifications
+// ════════════════════════════════════════════
+
+let notifications = JSON.parse(localStorage.getItem('veilx_notifs') || '[]');
+let notifPanelOpen = false;
+
+// ── Notification types ────────────────────────
+const NOTIF_TYPES = {
+  trending:   { icon: '🔥', color: '#ff6b35' },
+  room:       { icon: '🚪', color: 'var(--accent)' },
+  reply:      { icon: '💬', color: 'var(--success)' },
+  ai:         { icon: '🤖', color: '#5bc8ff' },
+  study:      { icon: '📚', color: 'var(--success)' },
+  confession: { icon: '💭', color: 'var(--accent2)' },
+  streak:     { icon: '🔥', color: '#ff6b35' },
+  system:     { icon: '⚡', color: 'var(--accent)' }
+};
+
+// ── Add a notification ────────────────────────
+function addNotification(type, title, body, action) {
+  const notif = {
+    id: Date.now().toString(),
+    type: type || 'system',
+    title,
+    body,
+    action: action || null,
+    read: false,
+    time: Date.now()
+  };
+
+  notifications.unshift(notif);
+
+  // Keep max 30 notifications
+  if (notifications.length > 30) notifications = notifications.slice(0, 30);
+
+  saveNotifications();
+  updateNotifBadge();
+  renderNotifications();
+
+  // Show a brief toast for high priority types
+  if (['trending', 'streak', 'study'].includes(type)) {
+    const n = NOTIF_TYPES[type] || NOTIF_TYPES.system;
+    showToast(n.icon + ' ' + title, 'success');
+  }
+}
+
+function saveNotifications() {
+  localStorage.setItem('veilx_notifs', JSON.stringify(notifications));
+}
+
+// ── Update badge count ────────────────────────
+function updateNotifBadge() {
+  const unread = notifications.filter(n => !n.read).length;
+  const badge = document.getElementById('notif-badge');
+  if (!badge) return;
+
+  if (unread > 0) {
+    badge.style.display = 'flex';
+    badge.textContent = unread > 9 ? '9+' : unread;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ── Toggle panel ──────────────────────────────
+function toggleNotifPanel() {
+  const panel = document.getElementById('notif-panel');
+  if (!panel) return;
+
+  notifPanelOpen = !notifPanelOpen;
+  panel.style.display = notifPanelOpen ? 'block' : 'none';
+
+  if (notifPanelOpen) renderNotifications();
+}
+
+// Close when clicking outside
+document.addEventListener('click', function(e) {
+  const panel = document.getElementById('notif-panel');
+  const btn = document.getElementById('notif-btn');
+  if (panel && notifPanelOpen && !panel.contains(e.target) && !btn.contains(e.target)) {
+    panel.style.display = 'none';
+    notifPanelOpen = false;
+  }
+});
+
+// ── Render notification list ──────────────────
+function renderNotifications() {
+  const list = document.getElementById('notif-list');
+  if (!list) return;
+
+  if (notifications.length === 0) {
+    list.innerHTML =
+      '<div style="text-align:center;padding:2rem">' +
+        '<div style="font-size:1.8rem;margin-bottom:0.5rem">🔔</div>' +
+        '<div style="font-family:var(--mono);font-size:0.68rem;color:var(--muted)">No notifications yet</div>' +
+        '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);margin-top:0.3rem">Activity will appear here</div>' +
+      '</div>';
+    return;
+  }
+
+  list.innerHTML = notifications.map(function(n) {
+    const t = NOTIF_TYPES[n.type] || NOTIF_TYPES.system;
+    return '<div onclick="handleNotifClick(\'' + n.id + '\')" style="' +
+      'display:flex;gap:0.75rem;align-items:flex-start;' +
+      'padding:0.85rem 1rem;' +
+      'border-bottom:1px solid var(--border);' +
+      'cursor:pointer;' +
+      'background:' + (n.read ? 'transparent' : 'rgba(123,111,255,0.05)') + ';' +
+      'transition:background 0.15s' +
+      '" onmouseover="this.style.background=\'var(--surface2)\'" onmouseout="this.style.background=\'' + (n.read ? 'transparent' : 'rgba(123,111,255,0.05)') + '\'">' +
+
+      '<div style="width:34px;height:34px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">' +
+        t.icon +
+      '</div>' +
+
+      '<div style="flex:1;min-width:0">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.2rem">' +
+          '<div style="font-size:0.8rem;font-weight:700;color:' + (n.read ? 'var(--muted)' : 'var(--text)') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+            escHtml(n.title) +
+          '</div>' +
+          (!n.read ? '<div style="width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-left:0.5rem"></div>' : '') +
+        '</div>' +
+        '<div style="font-size:0.75rem;color:var(--muted);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+          escHtml(n.body) +
+        '</div>' +
+        '<div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);margin-top:0.3rem">' +
+          timeAgo(n.time) +
+        '</div>' +
+      '</div>' +
+
+    '</div>';
+  }).join('');
+}
+
+// ── Handle notification click ─────────────────
+function handleNotifClick(id) {
+  const notif = notifications.find(n => n.id === id);
+  if (!notif) return;
+
+  // Mark as read
+  notif.read = true;
+  saveNotifications();
+  updateNotifBadge();
+  renderNotifications();
+
+  // Navigate if action specified
+  if (notif.action) {
+    toggleNotifPanel();
+    if (notif.action.panel) {
+      switchPanel(notif.action.panel, null);
+    }
+  }
+}
+
+// ── Mark all as read ──────────────────────────
+function markAllRead() {
+  notifications.forEach(n => { n.read = true; });
+  saveNotifications();
+  updateNotifBadge();
+  renderNotifications();
+  showToast('All caught up ✓', 'success');
+}
+
+// ── Smart notification triggers ───────────────
+
+// Notify when problem gets AI response
+const _postProblemNotif = window.postProblem || postProblem;
+window.postProblem = async function() {
+  const result = await _postProblemNotif();
+  setTimeout(function() {
+    addNotification('ai', 'AI response ready', 'Your problem got a response from VEX', { panel: 'problems' });
+  }, 3000);
+  return result;
+};
+
+// Notify when study session completes
+const _timerCompleteNotif = window.timerComplete || timerComplete;
+window.timerComplete = function() {
+  const mode = studyState && studyState.timer && studyState.timer.mode;
+  if (mode === 'focus') {
+    const sessions = (studyState && studyState.sessions || 0) + 1;
+    addNotification('study', 'Focus session done! 🎉', '25 min completed. Sessions today: ' + sessions, { panel: 'study' });
+    // Streak notification every 3 sessions
+    if (sessions % 3 === 0) {
+      addNotification('streak', 'On a roll!', sessions + ' sessions today. Keep going!', null);
+    }
+  } else {
+    addNotification('study', 'Break over!', 'Time to get back to focus mode 💪', { panel: 'study' });
+  }
+  _timerCompleteNotif();
+};
+
+// Notify on confession reactions
+const _reactToConfessionNotif = window.reactToConfession || reactToConfession;
+window.reactToConfession = async function(id, emoji) {
+  await _reactToConfessionNotif(id, emoji);
+  addNotification('confession', 'Reaction sent', 'You reacted ' + emoji + ' to a confession', { panel: 'confessions' });
+};
+
+// Notify when joining a room
+const _openChatRoomNotif = window.openChatRoom || openChatRoom;
+window.openChatRoom = function(code, type, isNew) {
+  if (isNew) {
+    setTimeout(function() {
+      addNotification('room', 'Room created!', 'Share code ' + code + ' to invite others', null);
+    }, 500);
+  }
+  _openChatRoomNotif(code, type, isNew);
+};
+
+// ── Simulated smart notifications ────────────
+// These fire periodically to show trending activity
+function startSmartNotifications() {
+  // First notification after 30 seconds of use
+  setTimeout(function() {
+    const trendingMessages = [
+      'Someone posted about exam stress in Ask Community',
+      'A new confession just got 5 reactions',
+      'Word Duel game is active — 3 players waiting',
+      'New trending problem in Tech category',
+      'Study group "CA Foundation" just started'
+    ];
+    const msg = trendingMessages[Math.floor(Math.random() * trendingMessages.length)];
+    addNotification('trending', 'Trending on VEILX', msg, { panel: 'problems' });
+  }, 30 * 1000);
+
+  // Then every 10 minutes
+  setInterval(function() {
+    const tips = [
+      { title: 'Study tip', body: 'Try a 25-min Pomodoro session now', action: { panel: 'study' } },
+      { title: 'Community active', body: 'New problems posted — help someone out', action: { panel: 'problems' } },
+      { title: 'VEX is waiting', body: 'Need advice or help? Ask VEX anything', action: { panel: 'chatbot' } },
+      { title: 'Trending confessions', body: 'See what the community is sharing', action: { panel: 'confessions' } },
+    ];
+    const tip = tips[Math.floor(Math.random() * tips.length)];
+    addNotification('system', tip.title, tip.body, tip.action);
+  }, 10 * 60 * 1000);
+}
+
+// ── Init on app start ─────────────────────────
+const _enterAppNotif = window.enterApp || enterApp;
+window.enterApp = function() {
+  _enterAppNotif();
+  updateNotifBadge();
+
+  // Welcome notification on first use
+  const isFirstUse = !localStorage.getItem('veilx_notif_welcomed');
+  if (isFirstUse) {
+    setTimeout(function() {
+      addNotification('system', 'Welcome to VEILX! ⚡', 'Anonymous. Encrypted. All yours. Explore the features.', { panel: 'home' });
+      localStorage.setItem('veilx_notif_welcomed', '1');
+    }, 2000);
+  }
+
+  startSmartNotifications();
 };
 </script>
 </body>
