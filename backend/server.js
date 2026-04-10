@@ -224,6 +224,116 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 // ════════════════════════════════════════════
+// VEILX Phase 5 Step 4 — Anonymous Leaderboard
+// All scores anonymous — codenames only
+// ════════════════════════════════════════════
+
+const leaderboardStore = new Map();
+// Structure: sessionKey -> {
+//   codename, emoji,
+//   helpScore,     // upvotes received on problems
+//   studySessions, // pomodoro sessions
+//   reactionScore, // reactions received on confessions
+//   pollVotes,     // polls created + voted
+//   streak,        // days active
+//   lastSeen, createdAt
+// }
+
+// ── Submit score update ──────────────────────
+app.post('/api/leaderboard/update', (req, res) => {
+  const { sessionKey, codename, emoji, category, delta } = req.body;
+
+  if (!sessionKey || typeof sessionKey !== 'string') {
+    return res.status(400).json({ error: 'Session key required' });
+  }
+
+  const key = sessionKey.substring(0, 32);
+  const categories = ['helpScore','studySessions','reactionScore','pollVotes','streak'];
+
+  if (!categories.includes(category)) {
+    return res.status(400).json({ error: 'Invalid category' });
+  }
+
+  if (!leaderboardStore.has(key)) {
+    leaderboardStore.set(key, {
+      codename: sanitize(codename || 'Anonymous', 30),
+      emoji: (emoji || '👤').substring(0, 4),
+      helpScore: 0,
+      studySessions: 0,
+      reactionScore: 0,
+      pollVotes: 0,
+      streak: 0,
+      lastSeen: Date.now(),
+      createdAt: Date.now()
+    });
+  }
+
+  const entry = leaderboardStore.get(key);
+  entry.codename = sanitize(codename || entry.codename, 30);
+  entry.emoji = (emoji || entry.emoji).substring(0, 4);
+  entry[category] = Math.max(0, (entry[category] || 0) + (Number(delta) || 1));
+  entry.lastSeen = Date.now();
+
+  res.json({ success: true, score: entry[category] });
+});
+
+// ── Get leaderboard ──────────────────────────
+app.get('/api/leaderboard', (req, res) => {
+  const { category } = req.query;
+  const now = Date.now();
+  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+
+  const entries = [];
+
+  for (const [key, entry] of leaderboardStore.entries()) {
+    // Remove entries not seen in 30 days
+    if (now - entry.lastSeen > thirtyDays) {
+      leaderboardStore.delete(key);
+      continue;
+    }
+
+    // Calculate total score
+    const totalScore = entry.helpScore * 3 +
+                       entry.studySessions * 2 +
+                       entry.reactionScore * 2 +
+                       entry.pollVotes +
+                       entry.streak * 5;
+
+    entries.push({
+      codename: entry.codename,
+      emoji: entry.emoji,
+      helpScore: entry.helpScore,
+      studySessions: entry.studySessions,
+      reactionScore: entry.reactionScore,
+      pollVotes: entry.pollVotes,
+      streak: entry.streak,
+      totalScore
+    });
+  }
+
+  // Sort by requested category or total
+  if (category === 'helpers') {
+    entries.sort((a, b) => b.helpScore - a.helpScore);
+  } else if (category === 'studiers') {
+    entries.sort((a, b) => b.studySessions - a.studySessions);
+  } else if (category === 'confessors') {
+    entries.sort((a, b) => b.reactionScore - a.reactionScore);
+  } else {
+    entries.sort((a, b) => b.totalScore - a.totalScore);
+  }
+
+  res.json({ entries: entries.slice(0, 20) });
+});
+
+// ── Cleanup inactive entries ─────────────────
+setInterval(() => {
+  const now = Date.now();
+  const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+  for (const [key, entry] of leaderboardStore.entries()) {
+    if (now - entry.lastSeen > thirtyDays) leaderboardStore.delete(key);
+  }
+}, 24 * 60 * 60 * 1000);
+// ════════════════════════════════════════════
 // VEILX Phase 5 Step 3 — Anonymous Polls
 // Polls expire after 48 hours
 // One vote per session per poll
