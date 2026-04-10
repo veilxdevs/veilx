@@ -260,6 +260,8 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <div class="nav-item" onclick="switchPanel('browse',this)"><span class="nav-icon">🌐</span> Browse Rooms</div>
     <div class="nav-item" onclick="switchPanel('feed',this)"><span class="nav-icon">📰</span> Feed</div>
     <div class="nav-item" onclick="switchPanel('polls',this)"><span class="nav-icon">🎭</span> Polls</div>
+    <div class="nav-item" onclick="switchPanel('leaderboard',this)"><span class="nav-icon">🏆</span> Leaderboard</div>
+    <div class="nav-item" onclick="switchPanel('sharecards',this)"><span class="nav-icon">🔗</span> Share Cards</div>
     <div class="nav-item active" onclick="switchPanel('home',this)"><span class="nav-icon">🏠</span> Home</div>
     <div class="nav-item" onclick="switchPanel('rooms',this)"><span class="nav-icon">🚪</span> Rooms</div>
     <div class="nav-item" onclick="switchPanel('problems',this)"><span class="nav-icon">🆘</span> Ask Community</div>
@@ -462,6 +464,115 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         </div>
         <div id="game-area"></div>
       </div>
+      <!-- ══ SHARE CARDS PANEL ══ -->
+<div class="panel" id="panel-sharecards">
+
+  <div class="welcome-banner" style="background:linear-gradient(135deg,rgba(79,255,176,0.1),rgba(91,200,255,0.1))">
+    <div class="welcome-title">🔗 Share Cards</div>
+    <div class="welcome-sub">Generate beautiful cards from your stats, confessions or poll results. Download and share anywhere.</div>
+  </div>
+
+  <!-- Card Type Selector -->
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0.75rem;margin-bottom:1.25rem">
+
+    <div onclick="selectCardType('stats')" id="card-type-stats" style="background:var(--surface);border:2px solid var(--accent);border-radius:var(--radius);padding:1rem;cursor:pointer;text-align:center;transition:all 0.15s">
+      <div style="font-size:1.4rem;margin-bottom:0.4rem">📊</div>
+      <div style="font-size:0.8rem;font-weight:700">My Stats</div>
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);margin-top:2px">Your usage card</div>
+    </div>
+
+    <div onclick="selectCardType('confession')" id="card-type-confession" style="background:var(--surface);border:2px solid transparent;border-radius:var(--radius);padding:1rem;cursor:pointer;text-align:center;transition:all 0.15s">
+      <div style="font-size:1.4rem;margin-bottom:0.4rem">💭</div>
+      <div style="font-size:0.8rem;font-weight:700">Confession</div>
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);margin-top:2px">Anonymous quote</div>
+    </div>
+
+    <div onclick="selectCardType('achievement')" id="card-type-achievement" style="background:var(--surface);border:2px solid transparent;border-radius:var(--radius);padding:1rem;cursor:pointer;text-align:center;transition:all 0.15s">
+      <div style="font-size:1.4rem;margin-bottom:0.4rem">🏆</div>
+      <div style="font-size:0.8rem;font-weight:700">Achievement</div>
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);margin-top:2px">Study milestone</div>
+    </div>
+
+  </div>
+
+  <!-- Card Options — Stats -->
+  <div id="card-options-stats" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;margin-bottom:1.1rem">
+    <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.75rem">STATS CARD OPTIONS</div>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;cursor:pointer">
+        <input type="checkbox" id="card-show-messages" checked style="accent-color:var(--accent)"/> Messages
+      </label>
+      <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;cursor:pointer">
+        <input type="checkbox" id="card-show-problems" checked style="accent-color:var(--accent)"/> Problems
+      </label>
+      <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;cursor:pointer">
+        <input type="checkbox" id="card-show-study" checked style="accent-color:var(--accent)"/> Study
+      </label>
+      <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;cursor:pointer">
+        <input type="checkbox" id="card-show-streak" checked style="accent-color:var(--accent)"/> Streak
+      </label>
+    </div>
+  </div>
+
+  <!-- Card Options — Confession -->
+  <div id="card-options-confession" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;margin-bottom:1.1rem">
+    <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.75rem">CONFESSION TEXT</div>
+    <textarea id="card-confession-text" placeholder="Type your anonymous confession here..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.75rem;color:var(--text);font-family:var(--display);font-size:0.875rem;outline:none;resize:none;height:80px;box-sizing:border-box;line-height:1.5" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+  </div>
+
+  <!-- Card Options — Achievement -->
+  <div id="card-options-achievement" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;margin-bottom:1.1rem">
+    <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.75rem">ACHIEVEMENT TYPE</div>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+      <button onclick="selectAchievement(this,'study')" class="chip selected" data-achievement="study">📚 Study Streak</button>
+      <button onclick="selectAchievement(this,'helper')" class="chip" data-achievement="helper">🆘 Top Helper</button>
+      <button onclick="selectAchievement(this,'anonymous')" class="chip" data-achievement="anonymous">🔒 Staying Anonymous</button>
+      <button onclick="selectAchievement(this,'custom')" class="chip" data-achievement="custom">✏️ Custom</button>
+    </div>
+    <input id="card-achievement-custom" placeholder="Custom achievement text..." style="display:none;width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.9rem;color:var(--text);font-family:var(--display);font-size:0.85rem;outline:none;margin-top:0.65rem;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+  </div>
+
+  <!-- Canvas Preview -->
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem;margin-bottom:1rem">
+    <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.75rem">PREVIEW</div>
+    <div style="display:flex;justify-content:center;margin-bottom:0.85rem">
+      <canvas id="share-card-canvas" width="600" height="340" style="max-width:100%;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.4)"></canvas>
+    </div>
+    <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap">
+      <button onclick="generateShareCard()" class="btn-sm btn-accent">🎨 Generate Card</button>
+      <button onclick="downloadShareCard()" class="btn-sm btn-outline" id="download-card-btn" style="display:none">⬇ Download PNG</button>
+      <button onclick="copyCardToClipboard()" class="btn-sm btn-outline" id="copy-card-btn" style="display:none">📋 Copy Image</button>
+    </div>
+  </div>
+
+</div>
+      <!-- ══ LEADERBOARD PANEL ══ -->
+<div class="panel" id="panel-leaderboard">
+
+  <div class="welcome-banner" style="background:linear-gradient(135deg,rgba(255,159,67,0.12),rgba(255,107,157,0.08))">
+    <div class="welcome-title">🏆 Leaderboard</div>
+    <div class="welcome-sub">Top anonymous contributors. All codenames. No identities. Pure achievement.</div>
+  </div>
+
+  <!-- Category Tabs -->
+  <div style="display:flex;gap:0.5rem;margin-bottom:1.1rem;flex-wrap:wrap">
+    <button id="lb-tab-overall" onclick="loadLeaderboard('overall')" style="background:linear-gradient(135deg,var(--accent),#5a4fff);border:none;border-radius:8px;color:white;font-family:var(--display);font-size:0.78rem;font-weight:600;padding:0.45rem 0.85rem;cursor:pointer">🏆 Overall</button>
+    <button id="lb-tab-helpers" onclick="loadLeaderboard('helpers')" style="background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--display);font-size:0.78rem;font-weight:600;padding:0.45rem 0.85rem;cursor:pointer">🆘 Helpers</button>
+    <button id="lb-tab-studiers" onclick="loadLeaderboard('studiers')" style="background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--display);font-size:0.78rem;font-weight:600;padding:0.45rem 0.85rem;cursor:pointer">📚 Studiers</button>
+    <button id="lb-tab-confessors" onclick="loadLeaderboard('confessors')" style="background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--display);font-size:0.78rem;font-weight:600;padding:0.45rem 0.85rem;cursor:pointer">💭 Confessors</button>
+  </div>
+
+  <!-- Your rank card -->
+  <div id="my-rank-card" style="background:var(--surface);border:1px solid rgba(123,111,255,0.3);border-radius:var(--radius);padding:1rem;margin-bottom:1.1rem;display:none">
+    <!-- filled by JS -->
+  </div>
+
+  <!-- Leaderboard List -->
+  <div id="leaderboard-list">
+    <div style="text-align:center;padding:2rem;font-family:var(--mono);font-size:0.72rem;color:var(--muted)">Loading leaderboard...</div>
+  </div>
+
+</div>
       <!-- ══ POLLS PANEL ══ -->
 <div class="panel" id="panel-polls">
 
@@ -2721,7 +2832,684 @@ window.switchPanel = function(name, navEl) {
     loadPolls();
   }
 };
+// ════════════════════════════════════════════
+// VEILX Phase 5 Step 4 — Leaderboard JS
+// ════════════════════════════════════════════
 
+let currentLbTab = 'overall';
+
+// ── Session key for this device ──────────────
+function getLbSessionKey() {
+  let key = localStorage.getItem('veilx_lb_key');
+  if (!key) {
+    key = crypto.randomUUID
+      ? crypto.randomUUID().replace(/-/g, '').substring(0, 32)
+      : Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+    localStorage.setItem('veilx_lb_key', key);
+  }
+  return key;
+}
+
+// ── Submit score to leaderboard ───────────────
+async function submitLbScore(category, delta) {
+  if (!identity) return;
+  try {
+    await fetch('/api/leaderboard/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionKey: getLbSessionKey(),
+        codename: identity.codename,
+        emoji: identity.emoji,
+        category,
+        delta: delta || 1
+      })
+    });
+  } catch(e) {}
+}
+
+// ── Load leaderboard ──────────────────────────
+async function loadLeaderboard(category) {
+  currentLbTab = category || 'overall';
+
+  // Update tab styles
+  ['overall','helpers','studiers','confessors'].forEach(function(t) {
+    const btn = document.getElementById('lb-tab-' + t);
+    if (!btn) return;
+    if (t === currentLbTab) {
+      btn.style.background = 'linear-gradient(135deg,var(--accent),#5a4fff)';
+      btn.style.color = 'white';
+      btn.style.border = 'none';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--muted)';
+      btn.style.border = '1px solid var(--border)';
+    }
+  });
+
+  const container = document.getElementById('leaderboard-list');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/api/leaderboard?category=' + currentLbTab);
+    const data = await res.json();
+
+    if (!data.entries || data.entries.length === 0) {
+      container.innerHTML =
+        '<div style="text-align:center;padding:3rem">' +
+          '<div style="font-size:2rem;margin-bottom:0.75rem">🏆</div>' +
+          '<div style="font-family:var(--mono);font-size:0.75rem;color:var(--muted)">No scores yet</div>' +
+          '<div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-top:0.4rem">Be the first! Post problems, study, confess.</div>' +
+        '</div>';
+      return;
+    }
+
+    // Find my rank
+    const myRank = data.entries.findIndex(e => e.codename === identity.codename);
+    renderMyRankCard(myRank >= 0 ? { rank: myRank + 1, ...data.entries[myRank] } : null);
+
+    container.innerHTML = data.entries.map(function(entry, i) {
+      return renderLeaderboardEntry(entry, i + 1);
+    }).join('');
+
+  } catch(err) {
+    container.innerHTML =
+      '<div style="text-align:center;font-family:var(--mono);font-size:0.72rem;color:var(--muted);padding:2rem">Could not load leaderboard.</div>';
+  }
+}
+
+// ── Render my rank card ───────────────────────
+function renderMyRankCard(me) {
+  const card = document.getElementById('my-rank-card');
+  if (!card) return;
+
+  if (!me) {
+    card.style.display = 'none';
+    return;
+  }
+
+  card.style.display = 'block';
+  const scoreLabel = getScoreLabel(me, currentLbTab);
+
+  card.innerHTML =
+    '<div style="font-family:var(--mono);font-size:0.58rem;color:var(--accent);letter-spacing:2px;margin-bottom:0.5rem">YOUR RANK</div>' +
+    '<div style="display:flex;align-items:center;gap:0.85rem">' +
+      '<div style="font-size:1.6rem;font-weight:800;color:var(--accent);font-family:var(--mono);min-width:40px">#' + me.rank + '</div>' +
+      '<div style="width:38px;height:38px;border-radius:50%;background:rgba(123,111,255,0.2);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">' + me.emoji + '</div>' +
+      '<div>' +
+        '<div style="font-weight:700;font-size:0.88rem">' + escHtml(me.codename) + '</div>' +
+        '<div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);margin-top:2px">' + scoreLabel + '</div>' +
+      '</div>' +
+      '<div style="margin-left:auto;text-align:right">' +
+        '<div style="font-size:1.1rem;font-weight:800;color:var(--success);font-family:var(--mono)">' + getScoreValue(me, currentLbTab) + '</div>' +
+        '<div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted)">' + getScoreName(currentLbTab) + '</div>' +
+      '</div>' +
+    '</div>';
+}
+
+// ── Render one leaderboard entry ──────────────
+function renderLeaderboardEntry(entry, rank) {
+  const medals = ['🥇','🥈','🥉'];
+  const medal = rank <= 3 ? medals[rank - 1] : null;
+  const isMe = entry.codename === identity.codename;
+  const scoreValue = getScoreValue(entry, currentLbTab);
+  const scoreLabel = getScoreLabel(entry, currentLbTab);
+
+  return '<div style="' +
+    'display:flex;align-items:center;gap:0.85rem;' +
+    'padding:0.85rem 1rem;' +
+    'background:' + (isMe ? 'rgba(123,111,255,0.08)' : 'var(--surface)') + ';' +
+    'border:1px solid ' + (isMe ? 'rgba(123,111,255,0.3)' : 'var(--border)') + ';' +
+    'border-radius:var(--radius);' +
+    'margin-bottom:0.5rem' +
+  '">' +
+
+    '<div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;min-width:36px;text-align:center;color:' + (rank <= 3 ? 'var(--text)' : 'var(--muted)') + '">' +
+      (medal || '#' + rank) +
+    '</div>' +
+
+    '<div style="width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">' +
+      entry.emoji +
+    '</div>' +
+
+    '<div style="flex:1;min-width:0">' +
+      '<div style="font-weight:700;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+        escHtml(entry.codename) +
+        (isMe ? ' <span style="font-family:var(--mono);font-size:0.58rem;color:var(--accent)">(you)</span>' : '') +
+      '</div>' +
+      '<div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);margin-top:2px">' +
+        scoreLabel +
+      '</div>' +
+    '</div>' +
+
+    '<div style="text-align:right;flex-shrink:0">' +
+      '<div style="font-size:1.05rem;font-weight:800;color:' + (rank === 1 ? '#ffd700' : rank === 2 ? '#c0c0c0' : rank === 3 ? '#cd7f32' : 'var(--accent)') + ';font-family:var(--mono)">' +
+        scoreValue +
+      '</div>' +
+      '<div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted)">' +
+        getScoreName(currentLbTab) +
+      '</div>' +
+    '</div>' +
+
+  '</div>';
+}
+
+// ── Score helpers ─────────────────────────────
+function getScoreValue(entry, tab) {
+  if (tab === 'helpers') return entry.helpScore || 0;
+  if (tab === 'studiers') return entry.studySessions || 0;
+  if (tab === 'confessors') return entry.reactionScore || 0;
+  return entry.totalScore || 0;
+}
+
+function getScoreName(tab) {
+  if (tab === 'helpers') return 'help pts';
+  if (tab === 'studiers') return 'sessions';
+  if (tab === 'confessors') return 'reactions';
+  return 'total pts';
+}
+
+function getScoreLabel(entry, tab) {
+  if (tab === 'helpers') return '🆘 ' + (entry.helpScore||0) + ' help pts · 🔥 ' + (entry.streak||0) + ' day streak';
+  if (tab === 'studiers') return '📚 ' + (entry.studySessions||0) + ' sessions · ' + ((entry.studySessions||0)*25) + 'min focused';
+  if (tab === 'confessors') return '💭 ' + (entry.reactionScore||0) + ' reactions received';
+  return '🆘 ' + (entry.helpScore||0) + ' · 📚 ' + (entry.studySessions||0) + ' · 💭 ' + (entry.reactionScore||0);
+}
+
+// ── Hook score tracking into existing actions ─
+
+// Track problem votes received
+const _voteLb = window.vote || vote;
+window.vote = async function(id) {
+  await _voteLb(id);
+  // Award points to the problem poster — tracked locally as proxy
+  submitLbScore('helpScore', 1);
+};
+
+// Track study sessions
+const _timerCompleteLb = window.timerComplete || timerComplete;
+window.timerComplete = function() {
+  if (studyState && studyState.timer && studyState.timer.mode === 'focus') {
+    submitLbScore('studySessions', 1);
+  }
+  _timerCompleteLb();
+};
+
+// Track confession reactions received
+const _reactLb = window.reactToConfession || reactToConfession;
+window.reactToConfession = async function(id, emoji) {
+  await _reactLb(id, emoji);
+  submitLbScore('reactionScore', 1);
+};
+
+// Track poll activity
+const _voteOnPollLb = window.voteOnPoll || voteOnPoll;
+window.voteOnPoll = async function(pollId, optionIndex) {
+  await _voteOnPollLb(pollId, optionIndex);
+  submitLbScore('pollVotes', 1);
+};
+
+// Track streak from analytics
+const _enterAppLb = window.enterApp || enterApp;
+window.enterApp = function() {
+  _enterAppLb();
+  // Submit streak score on login
+  const analytics = getAnalytics();
+  if (analytics.streak && analytics.streak.count > 0) {
+    submitLbScore('streak', 0); // Just update without incrementing
+  }
+};
+
+// ── Hook into switchPanel ─────────────────────
+const _switchPanelLb = window.switchPanel || switchPanel;
+window.switchPanel = function(name, navEl) {
+  _switchPanelLb(name, navEl);
+  if (name === 'leaderboard') {
+    document.getElementById('topbar-title').textContent = '🏆 Leaderboard';
+    loadLeaderboard('overall');
+  }
+};
+// ════════════════════════════════════════════
+// VEILX Phase 5 Step 5 — Share Cards JS
+// Canvas-based PNG card generator
+// ════════════════════════════════════════════
+
+let currentCardType = 'stats';
+let currentAchievement = 'study';
+let cardGenerated = false;
+
+// ── Select card type ──────────────────────────
+function selectCardType(type) {
+  currentCardType = type;
+
+  // Update type selector borders
+  ['stats','confession','achievement'].forEach(function(t) {
+    const el = document.getElementById('card-type-' + t);
+    if (!el) return;
+    el.style.borderColor = t === type ? 'var(--accent)' : 'transparent';
+    el.style.background = t === type ? 'rgba(123,111,255,0.08)' : 'var(--surface)';
+  });
+
+  // Show/hide options panels
+  ['stats','confession','achievement'].forEach(function(t) {
+    const el = document.getElementById('card-options-' + t);
+    if (el) el.style.display = t === type ? 'block' : 'none';
+  });
+
+  // Auto-generate preview
+  generateShareCard();
+}
+
+// ── Select achievement type ───────────────────
+function selectAchievement(btn, type) {
+  currentAchievement = type;
+  document.querySelectorAll('[data-achievement]').forEach(function(b) {
+    b.classList.remove('selected');
+  });
+  btn.classList.add('selected');
+
+  const customInput = document.getElementById('card-achievement-custom');
+  if (customInput) customInput.style.display = type === 'custom' ? 'block' : 'none';
+
+  generateShareCard();
+}
+
+// ── Generate the card ─────────────────────────
+function generateShareCard() {
+  const canvas = document.getElementById('share-card-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  // Canvas size
+  canvas.width = 600;
+  canvas.height = 340;
+
+  if (currentCardType === 'stats') drawStatsCard(ctx, canvas);
+  else if (currentCardType === 'confession') drawConfessionCard(ctx, canvas);
+  else if (currentCardType === 'achievement') drawAchievementCard(ctx, canvas);
+
+  cardGenerated = true;
+  const dlBtn = document.getElementById('download-card-btn');
+  const cpBtn = document.getElementById('copy-card-btn');
+  if (dlBtn) dlBtn.style.display = 'block';
+  if (cpBtn) cpBtn.style.display = 'block';
+}
+
+// ── Draw helpers ──────────────────────────────
+function drawBackground(ctx, w, h) {
+  // Dark background
+  ctx.fillStyle = '#080810';
+  ctx.fillRect(0, 0, w, h);
+
+  // Grid pattern
+  ctx.strokeStyle = 'rgba(123,111,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < w; x += 40) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+  for (let y = 0; y < h; y += 40) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+
+  // Glow blob top-left
+  const grad1 = ctx.createRadialGradient(80, 80, 0, 80, 80, 200);
+  grad1.addColorStop(0, 'rgba(123,111,255,0.12)');
+  grad1.addColorStop(1, 'transparent');
+  ctx.fillStyle = grad1;
+  ctx.fillRect(0, 0, w, h);
+
+  // Glow blob bottom-right
+  const grad2 = ctx.createRadialGradient(w - 80, h - 60, 0, w - 80, h - 60, 180);
+  grad2.addColorStop(0, 'rgba(255,107,157,0.1)');
+  grad2.addColorStop(1, 'transparent');
+  ctx.fillStyle = grad2;
+  ctx.fillRect(0, 0, w, h);
+}
+
+function drawBorder(ctx, w, h) {
+  // Gradient border
+  const borderGrad = ctx.createLinearGradient(0, 0, w, h);
+  borderGrad.addColorStop(0, 'rgba(123,111,255,0.5)');
+  borderGrad.addColorStop(0.5, 'rgba(255,107,157,0.3)');
+  borderGrad.addColorStop(1, 'rgba(123,111,255,0.5)');
+  ctx.strokeStyle = borderGrad;
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, 1, 1, w - 2, h - 2, 16);
+  ctx.stroke();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function drawVEILXBrand(ctx, w, h) {
+  // VEILX watermark
+  ctx.font = 'bold 13px "Space Mono", monospace';
+  ctx.fillStyle = 'rgba(123,111,255,0.4)';
+  ctx.textAlign = 'right';
+  ctx.fillText('VEILX', w - 20, h - 16);
+
+  ctx.font = '10px "Space Mono", monospace';
+  ctx.fillStyle = 'rgba(123,111,255,0.3)';
+  ctx.fillText('Be anyone. Say anything.', w - 20, h - 4);
+  ctx.textAlign = 'left';
+}
+
+function drawGradientText(ctx, text, x, y, size, startColor, endColor) {
+  ctx.font = 'bold ' + size + 'px "Syne", sans-serif';
+  const grad = ctx.createLinearGradient(x, y - size, x + ctx.measureText(text).width, y);
+  grad.addColorStop(0, startColor);
+  grad.addColorStop(1, endColor);
+  ctx.fillStyle = grad;
+  ctx.fillText(text, x, y);
+}
+
+// ── Stats Card ────────────────────────────────
+function drawStatsCard(ctx, canvas) {
+  const w = canvas.width, h = canvas.height;
+  const analytics = getAnalytics();
+  const totals = analytics.totals || {};
+  const streak = analytics.streak || { count: 0, longest: 0 };
+
+  drawBackground(ctx, w, h);
+
+  // Header
+  drawGradientText(ctx, 'VEILX', 28, 52, 36, '#7b6fff', '#ff6b9d');
+
+  ctx.font = '13px "Space Mono", monospace';
+  ctx.fillStyle = 'rgba(107,107,138,0.8)';
+  ctx.fillText('MY ANONYMOUS STATS', 28, 72);
+
+  // Identity
+  ctx.font = 'bold 15px "Syne", sans-serif';
+  ctx.fillStyle = '#e8e8f0';
+  ctx.fillText(identity ? identity.emoji + '  ' + identity.codename : '👤 Anonymous', 28, 105);
+
+  // Divider line
+  const lineGrad = ctx.createLinearGradient(28, 0, w - 28, 0);
+  lineGrad.addColorStop(0, 'rgba(123,111,255,0.5)');
+  lineGrad.addColorStop(1, 'transparent');
+  ctx.strokeStyle = lineGrad;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(28, 118);
+  ctx.lineTo(w - 28, 118);
+  ctx.stroke();
+
+  // Stat items
+  const showMessages = document.getElementById('card-show-messages')?.checked !== false;
+  const showProblems = document.getElementById('card-show-problems')?.checked !== false;
+  const showStudy = document.getElementById('card-show-study')?.checked !== false;
+  const showStreak = document.getElementById('card-show-streak')?.checked !== false;
+
+  const stats = [];
+  if (showMessages) stats.push({ icon: '💬', label: 'Messages', value: totals.messages_sent || 0, color: '#7b6fff' });
+  if (showProblems) stats.push({ icon: '🆘', label: 'Problems', value: totals.problems_posted || 0, color: '#ff6b9d' });
+  if (showStudy) stats.push({ icon: '📚', label: 'Sessions', value: totals.study_sessions || 0, color: '#4fffb0' });
+  if (showStreak) stats.push({ icon: '🔥', label: 'Day Streak', value: streak.count || 0, color: '#ff9f43' });
+
+  const colW = (w - 56) / Math.max(stats.length, 1);
+
+  stats.forEach(function(stat, i) {
+    const x = 28 + i * colW;
+    const y = 145;
+
+    // Value
+    ctx.font = 'bold 32px "Space Mono", monospace';
+    ctx.fillStyle = stat.color;
+    ctx.textAlign = 'center';
+    ctx.fillText(String(stat.value), x + colW / 2, y + 35);
+
+    // Label
+    ctx.font = '11px "Space Mono", monospace';
+    ctx.fillStyle = 'rgba(107,107,138,0.9)';
+    ctx.fillText(stat.icon + ' ' + stat.label, x + colW / 2, y + 58);
+
+    ctx.textAlign = 'left';
+
+    // Vertical divider
+    if (i < stats.length - 1) {
+      ctx.strokeStyle = 'rgba(123,111,255,0.15)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x + colW, y + 10);
+      ctx.lineTo(x + colW, y + 65);
+      ctx.stroke();
+    }
+  });
+
+  // Bottom bar
+  ctx.fillStyle = 'rgba(123,111,255,0.08)';
+  roundRect(ctx, 28, h - 50, w - 56, 24, 6);
+  ctx.fill();
+
+  ctx.font = '11px "Space Mono", monospace';
+  ctx.fillStyle = 'rgba(79,255,176,0.7)';
+  ctx.textAlign = 'center';
+  ctx.fillText('🔒 Zero-knowledge · Anonymous · Encrypted', w / 2, h - 33);
+  ctx.textAlign = 'left';
+
+  drawBorder(ctx, w, h);
+  drawVEILXBrand(ctx, w, h);
+}
+
+// ── Confession Card ───────────────────────────
+function drawConfessionCard(ctx, canvas) {
+  const w = canvas.width, h = canvas.height;
+  const text = document.getElementById('card-confession-text')?.value.trim()
+    || 'I have never told anyone this before...';
+
+  drawBackground(ctx, w, h);
+
+  // Large quote mark
+  ctx.font = 'bold 120px serif';
+  ctx.fillStyle = 'rgba(123,111,255,0.12)';
+  ctx.fillText('"', 20, 110);
+
+  // VEILX label
+  ctx.font = '12px "Space Mono", monospace';
+  ctx.fillStyle = 'rgba(123,111,255,0.5)';
+  ctx.textAlign = 'right';
+  ctx.fillText('💭 VEILX CONFESSION', w - 28, 36);
+  ctx.textAlign = 'left';
+
+  // Confession text — word wrap
+  ctx.font = '18px "Syne", sans-serif';
+  ctx.fillStyle = '#e8e8f0';
+  const maxWidth = w - 96;
+  const lineHeight = 28;
+  const words = text.split(' ');
+  let line = '';
+  let y = h / 2 - 20;
+  const lines = [];
+
+  for (let i = 0; i < words.length; i++) {
+    const testLine = line + words[i] + ' ';
+    if (ctx.measureText(testLine).width > maxWidth && i > 0) {
+      lines.push(line);
+      line = words[i] + ' ';
+    } else {
+      line = testLine;
+    }
+  }
+  lines.push(line);
+
+  // Center vertically
+  const totalTextH = lines.length * lineHeight;
+  let startY = (h - totalTextH) / 2 + lineHeight / 2;
+  if (startY < 80) startY = 80;
+
+  lines.slice(0, 5).forEach(function(l, i) {
+    ctx.fillText(l.trim(), 48, startY + i * lineHeight);
+  });
+
+  // Anonymous tag
+  ctx.font = '12px "Space Mono", monospace';
+  ctx.fillStyle = 'rgba(107,107,138,0.7)';
+  ctx.fillText('— Anonymous · ' + new Date().toLocaleDateString(), 48, h - 36);
+
+  drawBorder(ctx, w, h);
+  drawVEILXBrand(ctx, w, h);
+}
+
+// ── Achievement Card ──────────────────────────
+function drawAchievementCard(ctx, canvas) {
+  const w = canvas.width, h = canvas.height;
+  const analytics = getAnalytics();
+  const totals = analytics.totals || {};
+  const streak = analytics.streak || { count: 0 };
+
+  const achievements = {
+    study: {
+      icon: '📚',
+      title: 'Study Champion',
+      value: (totals.study_sessions || 0) + ' Sessions',
+      desc: 'Completed ' + (totals.study_sessions || 0) + ' Pomodoro sessions',
+      color: '#4fffb0'
+    },
+    helper: {
+      icon: '🆘',
+      title: 'Community Helper',
+      value: (totals.problems_posted || 0) + ' Problems',
+      desc: 'Helped the anonymous community',
+      color: '#ff6b9d'
+    },
+    anonymous: {
+      icon: '🔒',
+      title: 'Staying Anonymous',
+      value: streak.count + ' Day Streak',
+      desc: 'Privacy-first, every single day',
+      color: '#7b6fff'
+    },
+    custom: {
+      icon: '🏆',
+      title: document.getElementById('card-achievement-custom')?.value || 'My Achievement',
+      value: identity ? identity.codename : 'Anonymous',
+      desc: 'VEILX · Anonymous · Encrypted',
+      color: '#ffd700'
+    }
+  };
+
+  const ach = achievements[currentAchievement] || achievements.study;
+
+  drawBackground(ctx, w, h);
+
+  // Center trophy/icon — large
+  ctx.font = '72px serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(ach.icon, w / 2, 130);
+
+  // Glow under icon
+  const glowGrad = ctx.createRadialGradient(w/2, 100, 0, w/2, 100, 120);
+  glowGrad.addColorStop(0, ach.color + '22');
+  glowGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = glowGrad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Achievement title
+  ctx.font = 'bold 28px "Syne", sans-serif';
+  ctx.fillStyle = ach.color;
+  ctx.textAlign = 'center';
+  ctx.fillText(ach.title, w / 2, 180);
+
+  // Value
+  ctx.font = 'bold 20px "Space Mono", monospace';
+  ctx.fillStyle = '#e8e8f0';
+  ctx.fillText(ach.value, w / 2, 212);
+
+  // Description
+  ctx.font = '14px "Space Mono", monospace';
+  ctx.fillStyle = 'rgba(107,107,138,0.8)';
+  ctx.fillText(ach.desc, w / 2, 242);
+
+  // Identity
+  if (identity) {
+    ctx.font = '13px "Space Mono", monospace';
+    ctx.fillStyle = 'rgba(123,111,255,0.6)';
+    ctx.fillText(identity.emoji + ' ' + identity.codename, w / 2, 278);
+  }
+
+  // Decorative line
+  const lineGrad = ctx.createLinearGradient(w/2 - 120, 0, w/2 + 120, 0);
+  lineGrad.addColorStop(0, 'transparent');
+  lineGrad.addColorStop(0.5, ach.color + '66');
+  lineGrad.addColorStop(1, 'transparent');
+  ctx.strokeStyle = lineGrad;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(w/2 - 120, 258);
+  ctx.lineTo(w/2 + 120, 258);
+  ctx.stroke();
+
+  ctx.textAlign = 'left';
+  drawBorder(ctx, w, h);
+  drawVEILXBrand(ctx, w, h);
+}
+
+// ── Download as PNG ───────────────────────────
+function downloadShareCard() {
+  if (!cardGenerated) { showToast('Generate a card first', 'error'); return; }
+  const canvas = document.getElementById('share-card-canvas');
+  if (!canvas) return;
+
+  const link = document.createElement('a');
+  link.download = 'veilx-card-' + Date.now() + '.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  showToast('Card downloaded! 🎉', 'success');
+}
+
+// ── Copy to clipboard ─────────────────────────
+async function copyCardToClipboard() {
+  if (!cardGenerated) { showToast('Generate a card first', 'error'); return; }
+  const canvas = document.getElementById('share-card-canvas');
+  if (!canvas) return;
+
+  try {
+    canvas.toBlob(async function(blob) {
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob })
+      ]);
+      showToast('Image copied to clipboard! 📋', 'success');
+    });
+  } catch(err) {
+    // Fallback — just download
+    downloadShareCard();
+    showToast('Copied not supported — downloaded instead', 'success');
+  }
+}
+
+// ── Live update on input changes ─────────────
+document.addEventListener('input', function(e) {
+  if (e.target.id === 'card-confession-text' ||
+      e.target.id === 'card-achievement-custom' ||
+      e.target.id === 'card-show-messages' ||
+      e.target.id === 'card-show-problems' ||
+      e.target.id === 'card-show-study' ||
+      e.target.id === 'card-show-streak') {
+    generateShareCard();
+  }
+});
+
+// ── Hook into switchPanel ─────────────────────
+const _switchPanelCards = window.switchPanel || switchPanel;
+window.switchPanel = function(name, navEl) {
+  _switchPanelCards(name, navEl);
+  if (name === 'sharecards') {
+    document.getElementById('topbar-title').textContent = '🔗 Share Cards';
+    setTimeout(generateShareCard, 100);
+  }
+};
 </script>
 </body>
 </html>
