@@ -682,9 +682,13 @@ app.post('/api/study/:code/timer', (req, res) => {
   res.json({ timer: room.timer, sessions: room.sessions });
 });
 
-// ── Socket: Join study room ──────────────────
-// Add this inside io.on('connection') handler
-/*
+io.on('connection', (socket) => {
+  let currentRoom = null;
+  let userCodename = null;
+  let userEmoji = null;
+
+  // study_join
+  socket.on('study_join', ({ code, codename }) => {
     const room = studyRooms.get((code || '').toUpperCase());
     if (!room) { socket.emit('study_error', { message: 'Study room not found' }); return; }
     socket.join('study_' + room.code);
@@ -697,6 +701,7 @@ app.post('/api/study/:code/timer', (req, res) => {
     });
   });
 
+  // study_leave
   socket.on('study_leave', ({ code }) => {
     const room = studyRooms.get((code || '').toUpperCase());
     if (room) {
@@ -705,8 +710,25 @@ app.post('/api/study/:code/timer', (req, res) => {
       io.to('study_' + room.code).emit('study_member_update', { members: room.members.size });
     }
   });
-*/
 
+  socket.on('join_room', ({ code, codename, emoji }) => {
+    // ... existing join_room code ...
+  });
+
+  // ... rest of handlers ...
+
+  socket.on('get_room_token', ({ code }) => {
+    const token = getRoomToken(code.toUpperCase());
+    socket.emit('room_token', { token });
+  });
+
+  // ... voice handlers ...
+
+  socket.on('disconnect', () => {
+    // ... disconnect code ...
+  });
+
+}); // ← one closing }); for io.on
 // Auto-cleanup study rooms after 4 hours
 setInterval(() => {
   const now = Date.now();
@@ -1420,87 +1442,10 @@ app.get('/api/report/count/:contentId', (req, res) => {
   const count = reportCounts.get(req.params.contentId) || 0;
   res.json({ count });
 });
-
-// ════════════════════════════════════════════
-// SOCKET.IO — REAL-TIME CHAT
-// ════════════════════════════════════════════
-// ── Phase 4 Step 3: Study Room Sockets ──
-
-socket.on('study_leave', ({ code }) => {
-  const room = studyRooms.get((code || '').toUpperCase());
-  if (room) {
-    room.members.delete(socket.id);
-    socket.leave('study_' + room.code);
-    io.to('study_' + room.code).emit('study_member_update', { members: room.members.size });
-  }
-});
-// ── Phase 4 Step 3: Study Room Sockets ──
-socket.on('study_join', ({ code, codename }) => {
-  let currentRoom = null;
-  let userCodename = null;
-  let userEmoji = null;
-
-  socket.on('join_room', ({ code, codename, emoji }) => {
-    code = (code || '').toUpperCase().substring(0, 6);
-    if (!code || code.length !== 6) {
-      socket.emit('error', { message: 'Invalid room code' });
-      return;
-    }
-    userCodename = sanitize(codename || 'Anonymous', 30);
-    userEmoji = (emoji || '👤').substring(0, 4);
-
-    if (!rooms.has(code)) {
-      rooms.set(code, createRoomRecord(code, 'General'));
-    }
-    const room = rooms.get(code);
-
-    if (currentRoom) {
-      socket.leave(currentRoom);
-      const prevRoom = rooms.get(currentRoom);
-      if (prevRoom) {
-        prevRoom.members.delete(socket.id);
-        io.to(currentRoom).emit('user_left', { count: prevRoom.members.size });
-      }
-    }
-
-    socket.join(code);
-    currentRoom = code;
-    room.members.add(socket.id);
-    room.lastActivity = Date.now();
-
-    socket.to(code).emit('user_joined', { count: room.members.size });
-    socket.emit('joined', { code, type: room.type, memberCount: room.members.size });
-  });
-
-  socket.on('send_message', ({ text }) => {
-    if (!currentRoom || !userCodename) return;
-    if (!checkMsgRate(socket.id)) {
-      socket.emit('error', { message: 'Slow down — too many messages.' });
-      return;
-    }
-    if (!text || typeof text !== 'string') return;
-    const clean = sanitize(text, 2000);
-    if (!clean) return;
-
-    const room = rooms.get(currentRoom);
-    if (!room) return;
-    room.lastActivity = Date.now();
-    room.msgCount++;
-
-    const payload = signMessage({
-      sender: userCodename,
-      avatar: userEmoji,
-      text: clean,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    });
-
-    io.to(currentRoom).emit('message', payload);
-  });
 // ════════════════════════════════════════════
 // VEILX Phase 3 Step 3 — Word Duel Game
 // Add this block BEFORE get_room_token socket
 // ════════════════════════════════════════════
-
 // ── Word Duel Game Store ─────────────────────
 const wordGames = new Map();
 // Structure: gameCode -> {
