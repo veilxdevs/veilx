@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>VEILX Admin — Control Center</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Clash+Display:wght@500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#04040a;--s1:#0a0a14;--s2:#10101e;--s3:#161628;
+  --border:rgba(99,102,241,0.18);--accent:#6366f1;--green:#22d3a5;
+  --red:#f43f5e;--yellow:#f59e0b;--blue:#38bdf8;--purple:#a855f7;
+  --text:#e2e2f0;--muted:#6b6b8a;--mono:'JetBrains Mono',monospace;
+  --display:'Clash Display',sans-serif;--r:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(99,102,241,0.08),transparent);pointer-events:none;}
+
+/* ── Login ── */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem;}
+.login-box{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:2.5rem;width:100%;max-width:420px;box-shadow:0 0 60px rgba(99,102,241,0.08);}
+.login-logo{font-family:var(--display);font-size:2rem;font-weight:700;background:linear-gradient(135deg,var(--accent),#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:0.3rem;}
+.login-sub{font-size:0.68rem;color:var(--muted);letter-spacing:3px;margin-bottom:2rem;}
+.field{margin-bottom:1rem;}
+.field label{display:block;font-size:0.62rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.4rem;}
+.field input{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:0.7rem 1rem;color:var(--text);font-family:var(--mono);font-size:0.82rem;outline:none;transition:border-color 0.2s;}
+.field input:focus{border-color:var(--accent);}
+.login-btn{width:100%;background:linear-gradient(135deg,var(--accent),#7c3aed);border:none;border-radius:8px;color:white;font-family:var(--mono);font-size:0.82rem;font-weight:600;padding:0.85rem;cursor:pointer;margin-top:0.5rem;transition:opacity 0.2s;}
+.login-btn:hover{opacity:0.85;}
+.login-err{background:rgba(244,63,94,0.1);border:1px solid rgba(244,63,94,0.3);border-radius:8px;padding:0.65rem 1rem;font-size:0.72rem;color:var(--red);margin-top:0.75rem;display:none;}
+
+/* ── App Layout ── */
+#admin-app{display:none;min-height:100vh;}
+.layout{display:flex;height:100vh;overflow:hidden;}
+
+/* ── Sidebar ── */
+.sidebar{width:220px;background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+.sb-logo{padding:1.25rem 1.25rem 1rem;font-family:var(--display);font-size:1.1rem;font-weight:700;background:linear-gradient(135deg,var(--accent),#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;border-bottom:1px solid var(--border);}
+.sb-tag{font-size:0.55rem;color:var(--red);letter-spacing:2px;display:block;margin-top:2px;-webkit-text-fill-color:var(--red);}
+.sb-section{padding:0.85rem 1.25rem 0.3rem;font-size:0.55rem;color:var(--muted);letter-spacing:2px;}
+.sb-item{display:flex;align-items:center;gap:0.65rem;padding:0.6rem 1.25rem;cursor:pointer;font-size:0.78rem;color:var(--muted);border-left:2px solid transparent;transition:all 0.15s;}
+.sb-item:hover{color:var(--text);background:var(--s2);}
+.sb-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(99,102,241,0.08);}
+.sb-bottom{margin-top:auto;padding:1rem 1.25rem;border-top:1px solid var(--border);}
+.logout-btn{width:100%;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--mono);font-size:0.72rem;padding:0.5rem;cursor:pointer;transition:all 0.15s;}
+.logout-btn:hover{border-color:var(--red);color:var(--red);}
+
+/* ── Main ── */
+.main{flex:1;overflow-y:auto;overflow-x:hidden;}
+.topbar{padding:1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--s1);position:sticky;top:0;z-index:10;}
+.topbar-title{font-family:var(--display);font-size:1rem;font-weight:600;}
+.live-dot{display:inline-flex;align-items:center;gap:0.4rem;font-size:0.62rem;color:var(--green);}
+.live-dot::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+
+/* ── Content ── */
+.content{padding:1.5rem;}
+.page{display:none;}
+.page.active{display:block;}
+.page-title{font-family:var(--display);font-size:1.2rem;font-weight:600;margin-bottom:1.25rem;}
+
+/* ── Stat Cards ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.85rem;margin-bottom:1.5rem;}
+.stat-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;right:0;width:60px;height:60px;border-radius:50%;filter:blur(20px);opacity:0.3;}
+.stat-card.green::before{background:var(--green);}
+.stat-card.blue::before{background:var(--blue);}
+.stat-card.purple::before{background:var(--purple);}
+.stat-card.yellow::before{background:var(--yellow);}
+.stat-card.red::before{background:var(--red);}
+.stat-val{font-size:2rem;font-weight:700;font-family:var(--mono);margin-bottom:0.2rem;}
+.stat-label{font-size:0.6rem;color:var(--muted);letter-spacing:2px;}
+.stat-card.green .stat-val{color:var(--green);}
+.stat-card.blue .stat-val{color:var(--blue);}
+.stat-card.purple .stat-val{color:var(--purple);}
+.stat-card.yellow .stat-val{color:var(--yellow);}
+.stat-card.red .stat-val{color:var(--red);}
+
+/* ── Tables ── */
+.table-wrap{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:1.25rem;}
+.table-head{padding:0.75rem 1rem;border-bottom:1px solid var(--border);font-size:0.6rem;color:var(--muted);letter-spacing:2px;background:var(--s2);display:flex;align-items:center;justify-content:space-between;}
+table{width:100%;border-collapse:collapse;}
+th{padding:0.6rem 1rem;text-align:left;font-size:0.6rem;color:var(--muted);letter-spacing:1px;border-bottom:1px solid var(--border);background:var(--s2);}
+td{padding:0.7rem 1rem;font-size:0.78rem;border-bottom:1px solid rgba(99,102,241,0.06);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(99,102,241,0.04);}
+
+/* ── Toggles ── */
+.toggle-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0.75rem;margin-bottom:1.25rem;}
+.toggle-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:1rem;display:flex;align-items:center;justify-content:space-between;}
+.toggle-info{flex:1;}
+.toggle-name{font-size:0.85rem;font-weight:600;margin-bottom:0.2rem;}
+.toggle-desc{font-size:0.62rem;color:var(--muted);}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--s3);border-radius:24px;cursor:pointer;transition:0.3s;border:1px solid var(--border);}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;background:var(--muted);border-radius:50%;transition:0.3s;}
+.toggle input:checked + .toggle-slider{background:rgba(99,102,241,0.3);border-color:var(--accent);}
+.toggle input:checked + .toggle-slider::before{transform:translateX(20px);background:var(--accent);}
+
+/* ── Forms ── */
+.form-row{display:flex;gap:0.65rem;margin-bottom:0.75rem;flex-wrap:wrap;}
+.form-field{flex:1;min-width:140px;}
+.form-field label{display:block;font-size:0.6rem;color:var(--muted);letter-spacing:1px;margin-bottom:0.35rem;}
+.form-field input,.form-field select{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.85rem;color:var(--text);font-family:var(--mono);font-size:0.78rem;outline:none;transition:border-color 0.2s;}
+.form-field input:focus,.form-field select:focus{border-color:var(--accent);}
+.form-field select option{background:var(--s2);}
+
+/* ── Buttons ── */
+.btn{padding:0.55rem 1rem;border-radius:8px;border:none;cursor:pointer;font-family:var(--mono);font-size:0.75rem;font-weight:600;transition:all 0.15s;white-space:nowrap;}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#7c3aed);color:white;}
+.btn-danger{background:rgba(244,63,94,0.15);color:var(--red);border:1px solid rgba(244,63,94,0.3);}
+.btn-danger:hover{background:rgba(244,63,94,0.25);}
+.btn-outline{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-outline:hover{color:var(--text);border-color:var(--accent);}
+.btn-green{background:rgba(34,211,165,0.15);color:var(--green);border:1px solid rgba(34,211,165,0.3);}
+
+/* ── Announcement ── */
+.announcement-box{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem;margin-bottom:1.25rem;}
+.announcement-preview{padding:0.75rem 1rem;border-radius:8px;margin-top:0.75rem;font-size:0.82rem;display:none;}
+.announcement-preview.info{background:rgba(56,189,248,0.1);border:1px solid rgba(56,189,248,0.3);color:var(--blue);}
+.announcement-preview.warning{background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:var(--yellow);}
+.announcement-preview.success{background:rgba(34,211,165,0.1);border:1px solid rgba(34,211,165,0.3);color:var(--green);}
+
+/* ── Badge ── */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.58rem;letter-spacing:1px;font-weight:600;}
+.badge-green{background:rgba(34,211,165,0.15);color:var(--green);}
+.badge-red{background:rgba(244,63,94,0.15);color:var(--red);}
+.badge-yellow{background:rgba(245,158,11,0.15);color:var(--yellow);}
+.badge-blue{background:rgba(56,189,248,0.15);color:var(--blue);}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--s2);border:1px solid var(--border);border-radius:24px;padding:0.65rem 1.25rem;font-size:0.72rem;z-index:1000;transform:translateY(80px);opacity:0;transition:all 0.3s;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.success{border-color:var(--green);color:var(--green);}
+.toast.error{border-color:var(--red);color:var(--red);}
+
+/* ── Maintenance Banner ── */
+.maintenance-card{background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.25);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;}
+.maint-on .maintenance-card{display:flex;}
+
+/* ── Animations ── */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.page.active{animation:fadeUp 0.2s ease;}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">VEILX</div>
+    <div class="login-sub">ADMIN CONTROL CENTER</div>
+    <div class="field"><label>USERNAME</label><input type="text" id="login-user" placeholder="Admin username" autocomplete="off"/></div>
+    <div class="field"><label>PASSWORD</label><input type="password" id="login-pass" placeholder="Admin password"/></div>
+    <div class="field"><label>SECRET KEY</label><input type="password" id="login-key" placeholder="Admin secret key"/></div>
+    <button class="login-btn" onclick="adminLogin()">→ Access Control Center</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="admin-app">
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sb-logo">VEILX<span class="sb-tag">ADMIN PANEL</span></div>
+      <div class="sb-section">OVERVIEW</div>
+      <div class="sb-item active" onclick="showPage('dashboard',this)">📊 Dashboard</div>
+      <div class="sb-item" onclick="showPage('traffic',this)">📈 Traffic & Stats</div>
+      <div class="sb-section">CONTROLS</div>
+      <div class="sb-item" onclick="showPage('features',this)">🔧 Feature Flags</div>
+      <div class="sb-item" onclick="showPage('maintenance',this)">⚙️ Maintenance</div>
+      <div class="sb-item" onclick="showPage('announcements',this)">📢 Announcements</div>
+      <div class="sb-section">MONETIZATION</div>
+      <div class="sb-item" onclick="showPage('coupons',this)">🎟️ Coupons</div>
+      <div class="sb-item" onclick="showPage('premium',this)">💰 Premium Sessions</div>
+      <div class="sb-section">CONTENT</div>
+      <div class="sb-item" onclick="showPage('moderation',this)">🛡️ Moderation</div>
+      <div class="sb-bottom">
+        <button class="logout-btn" onclick="adminLogout()">← Logout</button>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+      <div class="topbar">
+        <div class="topbar-title" id="page-title">Dashboard</div>
+        <div class="live-dot" id="live-indicator">LIVE</div>
+      </div>
+
+      <div class="content">
+
+        <!-- ══ DASHBOARD ══ -->
+        <div class="page active" id="page-dashboard">
+          <div id="maint-banner" style="display:none" class="maintenance-card">
+            <div><span style="color:var(--red);font-weight:700">⚠ MAINTENANCE MODE ACTIVE</span><div style="font-size:0.68rem;color:var(--muted);margin-top:3px">Users are seeing the maintenance page</div></div>
+            <button class="btn btn-outline" onclick="toggleMaintenance(false)">Disable Now</button>
+          </div>
+          <div class="stats-grid" id="live-stats">
+            <div class="stat-card green"><div class="stat-val" id="stat-rooms">—</div><div class="stat-label">ACTIVE ROOMS</div></div>
+            <div class="stat-card blue"><div class="stat-val" id="stat-users">—</div><div class="stat-label">ONLINE USERS</div></div>
+            <div class="stat-card purple"><div class="stat-val" id="stat-visits">—</div><div class="stat-label">TOTAL VISITS</div></div>
+            <div class="stat-card yellow"><div class="stat-val" id="stat-problems">—</div><div class="stat-label">PROBLEMS POSTED</div></div>
+            <div class="stat-card green"><div class="stat-val" id="stat-confessions">—</div><div class="stat-label">CONFESSIONS</div></div>
+            <div class="stat-card blue"><div class="stat-val" id="stat-polls">—</div><div class="stat-label">ACTIVE POLLS</div></div>
+            <div class="stat-card purple"><div class="stat-val" id="stat-premium">—</div><div class="stat-label">PREMIUM USERS</div></div>
+            <div class="stat-card yellow"><div class="stat-val" id="stat-uptime">—</div><div class="stat-label">UPTIME</div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="table-wrap">
+              <div class="table-head">📊 CONTENT OVERVIEW</div>
+              <table>
+                <tr><td>Files shared</td><td id="info-files" style="color:var(--accent)">—</td></tr>
+                <tr><td>Study rooms</td><td id="info-study" style="color:var(--accent)">—</td></tr>
+                <tr><td>Public rooms</td><td id="info-pubrooms" style="color:var(--accent)">—</td></tr>
+                <tr><td>Leaderboard entries</td><td id="info-lb" style="color:var(--accent)">—</td></tr>
+                <tr><td>Active coupons</td><td id="info-coupons" style="color:var(--green)">—</td></tr>
+              </table>
+            </div>
+            <div class="table-wrap">
+              <div class="table-head">⚡ QUICK ACTIONS</div>
+              <div style="padding:1rem;display:flex;flex-direction:column;gap:0.65rem;">
+                <button class="btn btn-outline" onclick="showPage('features',document.querySelector('[onclick*=features]'))">🔧 Toggle Features</button>
+                <button class="btn btn-outline" onclick="showPage('announcements',document.querySelector('[onclick*=announcements]'))">📢 Push Announcement</button>
+                <button class="btn btn-outline" onclick="showPage('coupons',document.querySelector('[onclick*=coupons]'))">🎟️ Create Coupon</button>
+                <button class="btn btn-danger" onclick="if(confirm('Enable maintenance mode?'))toggleMaintenance(true)">⚙️ Enable Maintenance</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ TRAFFIC ══ -->
+        <div class="page" id="page-traffic">
+          <div class="page-title">📈 Traffic & Stats</div>
+          <div class="stats-grid">
+            <div class="stat-card green"><div class="stat-val" id="t-visits">—</div><div class="stat-label">TOTAL VISITS</div></div>
+            <div class="stat-card blue"><div class="stat-val" id="t-peak">—</div><div class="stat-label">PEAK USERS</div></div>
+            <div class="stat-card purple"><div class="stat-val" id="t-uptime">—</div><div class="stat-label">UPTIME (HRS)</div></div>
+            <div class="stat-card yellow"><div class="stat-val" id="t-rooms">—</div><div class="stat-label">ROOMS EVER</div></div>
+          </div>
+          <div class="table-wrap">
+            <div class="table-head">📊 DETAILED BREAKDOWN</div>
+            <table>
+              <tr><th>Metric</th><th>Value</th><th>Status</th></tr>
+              <tr><td>Active chat rooms</td><td id="td-rooms">—</td><td><span class="badge badge-green">LIVE</span></td></tr>
+              <tr><td>Online users (in rooms)</td><td id="td-users">—</td><td><span class="badge badge-green">LIVE</span></td></tr>
+              <tr><td>Problems posted (total)</td><td id="td-problems">—</td><td><span class="badge badge-blue">STORED</span></td></tr>
+              <tr><td>Confessions (total)</td><td id="td-confessions">—</td><td><span class="badge badge-blue">STORED</span></td></tr>
+              <tr><td>Active polls</td><td id="td-polls">—</td><td><span class="badge badge-yellow">EXPIRING</span></td></tr>
+              <tr><td>Files in memory</td><td id="td-files">—</td><td><span class="badge badge-yellow">24HR TTL</span></td></tr>
+              <tr><td>Premium sessions</td><td id="td-premium">—</td><td><span class="badge badge-green">ACTIVE</span></td></tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- ══ FEATURES ══ -->
+        <div class="page" id="page-features">
+          <div class="page-title">🔧 Feature Flags</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:1.25rem">Toggle features ON/OFF for all users instantly. Changes apply immediately — no restart needed.</div>
+          <div class="toggle-grid" id="feature-toggles">
+            <!-- filled by JS -->
+          </div>
+        </div>
+
+        <!-- ══ MAINTENANCE ══ -->
+        <div class="page" id="page-maintenance">
+          <div class="page-title">⚙️ Maintenance Mode</div>
+          <div class="announcement-box" style="margin-bottom:1.25rem">
+            <div style="font-size:0.62rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.85rem">MAINTENANCE STATUS</div>
+            <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+              <div id="maint-status-dot" style="width:12px;height:12px;border-radius:50%;background:var(--green)"></div>
+              <div><div id="maint-status-text" style="font-weight:600">Site is Live</div><div style="font-size:0.65rem;color:var(--muted);margin-top:2px">All users can access VEILX normally</div></div>
+            </div>
+            <div class="form-row">
+              <div class="form-field" style="flex:2"><label>MAINTENANCE MESSAGE</label><input id="maint-message" placeholder="We'll be back shortly! Upgrading VEILX..." /></div>
+            </div>
+            <div style="display:flex;gap:0.65rem">
+              <button class="btn btn-danger" onclick="toggleMaintenance(true)">⚠ Enable Maintenance Mode</button>
+              <button class="btn btn-green" onclick="toggleMaintenance(false)">✓ Disable — Go Live</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <div class="table-head">ℹ️ WHAT MAINTENANCE MODE DOES</div>
+            <table>
+              <tr><td>🚫 Blocks all new room creation</td></tr>
+              <tr><td>📢 Shows maintenance banner to all connected users</td></tr>
+              <tr><td>🔒 Admin panel remains accessible</td></tr>
+              <tr><td>💾 All data preserved — nothing deleted</td></tr>
+              <tr><td>⚡ Re-enables instantly when you turn it off</td></tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- ══ ANNOUNCEMENTS ══ -->
+        <div class="page" id="page-announcements">
+          <div class="page-title">📢 Announcements</div>
+          <div class="announcement-box">
+            <div style="font-size:0.62rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.85rem">PUSH A BANNER TO ALL USERS</div>
+            <div class="form-row">
+              <div class="form-field" style="flex:3"><label>MESSAGE TEXT</label><input id="ann-text" placeholder="🔥 New feature launched! Check out Anonymous Polls..." oninput="previewAnnouncement()"/></div>
+              <div class="form-field"><label>TYPE</label>
+                <select id="ann-type" onchange="previewAnnouncement()">
+                  <option value="info">ℹ️ Info (blue)</option>
+                  <option value="warning">⚠️ Warning (yellow)</option>
+                  <option value="success">✅ Success (green)</option>
+                </select>
+              </div>
+            </div>
+            <div id="ann-preview" class="announcement-preview"></div>
+            <div style="display:flex;gap:0.65rem;margin-top:0.85rem">
+              <button class="btn btn-primary" onclick="pushAnnouncement()">📢 Push to All Users</button>
+              <button class="btn btn-danger" onclick="clearAnnouncement()">✕ Clear Announcement</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <div class="table-head">📋 CURRENT ANNOUNCEMENT</div>
+            <div id="current-ann" style="padding:1rem;font-size:0.78rem;color:var(--muted)">No active announcement</div>
+          </div>
+        </div>
+
+        <!-- ══ COUPONS ══ -->
+        <div class="page" id="page-coupons">
+          <div class="page-title">🎟️ Coupon Management</div>
+          <div class="announcement-box" style="margin-bottom:1.25rem">
+            <div style="font-size:0.62rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.85rem">CREATE NEW COUPON</div>
+            <div class="form-row">
+              <div class="form-field"><label>COUPON CODE</label><input id="c-code" placeholder="LAUNCH50" style="text-transform:uppercase"/></div>
+              <div class="form-field"><label>DISCOUNT</label><input id="c-discount" type="number" placeholder="50" min="1" max="100"/></div>
+              <div class="form-field"><label>TYPE</label>
+                <select id="c-type">
+                  <option value="percent">% Percent off</option>
+                  <option value="flat">₹ Flat off</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-field"><label>VALID FOR PLAN</label>
+                <select id="c-plan">
+                  <option value="both">Both plans</option>
+                  <option value="plus">Plus only (₹49)</option>
+                  <option value="pro">Pro only (₹149)</option>
+                </select>
+              </div>
+              <div class="form-field"><label>MAX USES</label><input id="c-uses" type="number" placeholder="100" value="100"/></div>
+              <div class="form-field"><label>EXPIRY (DAYS)</label><input id="c-expiry" type="number" placeholder="30" value="30"/></div>
+            </div>
+            <div style="background:var(--s2);border-radius:8px;padding:0.75rem;margin-bottom:0.85rem;font-size:0.72rem;color:var(--muted)">
+              💡 Quick presets:
+              <span onclick="setPreset('LAUNCH50',50,'percent','both',100,30)" style="color:var(--accent);cursor:pointer;margin:0 0.4rem">LAUNCH50</span>
+              <span onclick="setPreset('STUDENT25',25,'percent','both',500,90)" style="color:var(--accent);cursor:pointer;margin:0 0.4rem">STUDENT25</span>
+              <span onclick="setPreset('FRIEND20',20,'percent','both',200,60)" style="color:var(--accent);cursor:pointer;margin:0 0.4rem">FRIEND20</span>
+              <span onclick="setPreset('VIP100',100,'flat','pro',10,30)" style="color:var(--accent);cursor:pointer;margin:0 0.4rem">VIP100</span>
+            </div>
+            <button class="btn btn-primary" onclick="createCoupon()">+ Create Coupon</button>
+          </div>
+
+          <div class="table-wrap">
+            <div class="table-head">🎟️ ALL COUPONS <span id="coupon-count" style="color:var(--accent)"></span></div>
+            <table>
+              <thead><tr><th>CODE</th><th>DISCOUNT</th><th>PLAN</th><th>USES</th><th>EXPIRES</th><th>STATUS</th><th></th></tr></thead>
+              <tbody id="coupons-table"><tr><td colspan="7" style="color:var(--muted);text-align:center;padding:1.5rem">No coupons yet</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ══ PREMIUM ══ -->
+        <div class="page" id="page-premium">
+          <div class="page-title">💰 Premium Sessions</div>
+          <div class="stats-grid">
+            <div class="stat-card green"><div class="stat-val" id="p-active">—</div><div class="stat-label">ACTIVE SESSIONS</div></div>
+            <div class="stat-card blue"><div class="stat-val" id="p-plus">—</div><div class="stat-label">PLUS USERS</div></div>
+            <div class="stat-card purple"><div class="stat-val" id="p-pro">—</div><div class="stat-label">PRO USERS</div></div>
+          </div>
+          <div class="announcement-box" style="margin-bottom:1.25rem">
+            <div style="font-size:0.62rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.85rem">CURRENT PRICING (₹)</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+              <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center">
+                <div style="font-size:0.6rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.5rem">PLUS PLAN</div>
+                <div style="font-size:2rem;font-weight:700;color:var(--accent)">₹49</div>
+                <div style="font-size:0.65rem;color:var(--muted)">per month</div>
+              </div>
+              <div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:1rem;text-align:center">
+                <div style="font-size:0.6rem;color:var(--muted);letter-spacing:2px;margin-bottom:0.5rem">PRO PLAN</div>
+                <div style="font-size:2rem;font-weight:700;color:var(--purple)">₹149</div>
+                <div style="font-size:0.65rem;color:var(--muted)">per month</div>
+              </div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <div class="table-head">ℹ️ PRICING NOTES</div>
+            <div style="padding:1rem;font-size:0.75rem;color:var(--muted);line-height:1.8">
+              Pricing updated to student-friendly rates: ₹49/month Plus, ₹149/month Pro.<br>
+              To change pricing, update the <code style="color:var(--accent)">prices</code> object in <code style="color:var(--accent)">server.js /api/premium/activate</code> route.<br>
+              Also update the frontend display in <code style="color:var(--accent)">index.html</code> premium panel.
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ MODERATION ══ -->
+        <div class="page" id="page-moderation">
+          <div class="page-title">🛡️ Content Moderation</div>
+          <div style="font-size:0.72rem;color:var(--red);background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.2);border-radius:8px;padding:0.75rem 1rem;margin-bottom:1.25rem">
+            ⚠️ These actions are <strong>permanent and irreversible</strong>. All deleted content cannot be recovered.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;margin-bottom:1.25rem">
+            <div class="table-wrap">
+              <div class="table-head">💭 CONFESSIONS</div>
+              <div style="padding:1rem">
+                <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem">Total: <span id="mod-confessions" style="color:var(--accent)">—</span> confessions stored</div>
+                <button class="btn btn-danger" onclick="clearContent('confessions')">🗑 Clear All Confessions</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <div class="table-head">🆘 PROBLEMS</div>
+              <div style="padding:1rem">
+                <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem">Total: <span id="mod-problems" style="color:var(--accent)">—</span> problems stored</div>
+                <button class="btn btn-danger" onclick="clearContent('problems')">🗑 Clear All Problems</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <div class="table-head">🎭 POLLS</div>
+              <div style="padding:1rem">
+                <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem">Total: <span id="mod-polls" style="color:var(--accent)">—</span> polls active</div>
+                <button class="btn btn-danger" onclick="clearContent('polls')">🗑 Clear All Polls</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <div class="table-head">🌐 PUBLIC ROOMS</div>
+              <div style="padding:1rem">
+                <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.75rem">Total: <span id="mod-rooms" style="color:var(--accent)">—</span> public rooms live</div>
+                <button class="btn btn-danger" onclick="clearContent('rooms')">🗑 Clear All Public Rooms</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end content -->
+    </div><!-- end main -->
+  </div><!-- end layout -->
+</div><!-- end app -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════
+// VEILX Admin Panel JS
+// ════════════════════════════════════════════
+
+let adminToken = localStorage.getItem('veilx_admin_token') || null;
+let statsInterval = null;
+
+// ── Auto-login if token exists ────────────────
+window.onload = function() {
+  if (adminToken) {
+    showApp();
+    loadStats();
+  }
+};
+
+// ── Login ─────────────────────────────────────
+async function adminLogin() {
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value;
+  const secretKey = document.getElementById('login-key').value.trim();
+  const errEl = document.getElementById('login-err');
+
+  if (!username || !password || !secretKey) {
+    errEl.textContent = 'All fields required.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, secretKey })
+    });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.error || 'Invalid credentials'; errEl.style.display = 'block'; return; }
+    adminToken = data.token;
+    localStorage.setItem('veilx_admin_token', adminToken);
+    errEl.style.display = 'none';
+    showApp();
+    loadStats();
+  } catch(err) {
+    errEl.textContent = 'Could not connect to server.';
+    errEl.style.display = 'block';
+  }
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-app').style.display = 'block';
+  startAutoRefresh();
+}
+
+function adminLogout() {
+  if (!confirm('Logout from admin panel?')) return;
+  fetch('/api/admin/logout', { method: 'POST', headers: { 'x-admin-session': adminToken } }).catch(() => {});
+  adminToken = null;
+  localStorage.removeItem('veilx_admin_token');
+  clearInterval(statsInterval);
+  document.getElementById('admin-app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-key').value = '';
+}
+
+// ── Headers helper ────────────────────────────
+function adminHeaders() {
+  return { 'Content-Type': 'application/json', 'x-admin-session': adminToken };
+}
+
+// ── Page navigation ───────────────────────────
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(s => s.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+  const titles = { dashboard: 'Dashboard', traffic: 'Traffic & Stats', features: 'Feature Flags', maintenance: 'Maintenance Mode', announcements: 'Announcements', coupons: 'Coupon Management', premium: 'Premium Sessions', moderation: 'Content Moderation' };
+  document.getElementById('page-title').textContent = titles[name] || name;
+  if (name === 'coupons') loadCoupons();
+  if (name === 'traffic') updateTrafficPage();
+  if (name === 'features') loadFeatureFlags();
+  if (name === 'premium') updatePremiumPage();
+  if (name === 'moderation') updateModerationPage();
+}
+
+// ── Load Stats ────────────────────────────────
+async function loadStats() {
+  try {
+    const res = await fetch('/api/admin/stats', { headers: { 'x-admin-session': adminToken } });
+    if (res.status === 401) { adminLogout(); return; }
+    const data = await res.json();
+    updateDashboard(data);
+  } catch(err) {}
+}
+
+function startAutoRefresh() {
+  loadStats();
+  statsInterval = setInterval(loadStats, 10000);
+}
+
+function updateDashboard(data) {
+  if (!data) return;
+  const { live, content, premium: prem } = data;
+
+  // Dashboard stats
+  setText('stat-rooms', live.activeRooms);
+  setText('stat-users', live.totalOnlineUsers);
+  setText('stat-visits', live.totalVisits);
+  setText('stat-problems', content.totalProblems);
+  setText('stat-confessions', content.totalConfessions);
+  setText('stat-polls', content.totalPolls);
+  setText('stat-premium', prem.activeSessions);
+  setText('stat-uptime', formatUptime(live.uptime));
+
+  // Content overview
+  setText('info-files', content.sharedFiles);
+  setText('info-study', content.activeStudyRooms);
+  setText('info-pubrooms', content.totalPublicRooms);
+  setText('info-lb', data.leaderboard.totalEntries);
+  setText('info-coupons', prem.activeCoupons);
+
+  // Maintenance banner
+  const maintBanner = document.getElementById('maint-banner');
+  if (data.maintenanceMode) { maintBanner.style.display = 'flex'; } else { maintBanner.style.display = 'none'; }
+
+  // Store for other pages
+  window._lastStats = data;
+}
+
+function updateTrafficPage() {
+  const d = window._lastStats;
+  if (!d) return;
+  setText('t-visits', d.live.totalVisits);
+  setText('t-peak', d.live.peakUsers);
+  setText('t-uptime', (d.live.uptime / 3600).toFixed(1));
+  setText('t-rooms', d.live.activeRooms);
+  setText('td-rooms', d.live.activeRooms);
+  setText('td-users', d.live.totalOnlineUsers);
+  setText('td-problems', d.content.totalProblems);
+  setText('td-confessions', d.content.totalConfessions);
+  setText('td-polls', d.content.totalPolls);
+  setText('td-files', d.content.sharedFiles);
+  setText('td-premium', d.premium.activeSessions);
+}
+
+function updatePremiumPage() {
+  const d = window._lastStats;
+  if (!d) return;
+  setText('p-active', d.premium.activeSessions);
+  setText('p-plus', '—');
+  setText('p-pro', '—');
+}
+
+function updateModerationPage() {
+  const d = window._lastStats;
+  if (!d) return;
+  setText('mod-confessions', d.content.totalConfessions);
+  setText('mod-problems', d.content.totalProblems);
+  setText('mod-polls', d.content.totalPolls);
+  setText('mod-rooms', d.content.totalPublicRooms);
+}
+
+// ── Feature Flags ─────────────────────────────
+async function loadFeatureFlags() {
+  try {
+    const res = await fetch('/api/admin/features', { headers: { 'x-admin-session': adminToken } });
+    const data = await res.json();
+    renderFeatureToggles(data.featureFlags);
+  } catch(err) {}
+}
+
+const featureDescriptions = {
+  premium: { name: 'Premium Plans', desc: 'Show Go Premium page and allow upgrades', icon: '💰' },
+  polls: { name: 'Anonymous Polls', desc: 'Allow users to create and vote on polls', icon: '🎭' },
+  confessions: { name: 'Confessions Board', desc: 'Anonymous confessions feature', icon: '💭' },
+  leaderboard: { name: 'Leaderboard', desc: 'Anonymous rankings and scores', icon: '🏆' },
+  browseRooms: { name: 'Browse Rooms', desc: 'Public room discovery browser', icon: '🌐' },
+  feed: { name: 'VEILX Feed', desc: 'Unified content feed (Hot/New/Community)', icon: '📰' },
+  studyGroups: { name: 'Study Groups', desc: 'Pomodoro study rooms with shared notes', icon: '📚' },
+  gamingZone: { name: 'Gaming Zone', desc: 'Multiplayer games (Tic Tac Toe, Word Duel)', icon: '🎮' },
+  chatbot: { name: 'VEX AI Chatbot', desc: 'AI-powered anonymous assistant', icon: '🤖' },
+  fileSharing: { name: 'File Sharing', desc: 'Temporary anonymous file sharing', icon: '📎' }
+};
+
+function renderFeatureToggles(flags) {
+  const container = document.getElementById('feature-toggles');
+  container.innerHTML = Object.entries(flags).map(([key, enabled]) => {
+    const info = featureDescriptions[key] || { name: key, desc: '', icon: '⚙️' };
+    return `<div class="toggle-card">
+      <div class="toggle-info">
+        <div class="toggle-name">${info.icon} ${info.name}</div>
+        <div class="toggle-desc">${info.desc}</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" ${enabled ? 'checked' : ''} onchange="toggleFeature('${key}', this.checked)"/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>`;
+  }).join('');
+}
+
+async function toggleFeature(feature, enabled) {
+  try {
+    const res = await fetch('/api/admin/features', {
+      method: 'POST',
+      headers: adminHeaders(),
+      body: JSON.stringify({ feature, enabled })
+    });
+    const data = await res.json();
+    if (data.success) showToast((enabled ? '✓ ' : '✕ ') + featureDescriptions[feature]?.name + ' ' + (enabled ? 'enabled' : 'disabled'), enabled ? 'success' : 'error');
+  } catch(err) { showToast('Failed to update feature', 'error'); }
+}
+
+// ── Maintenance ───────────────────────────────
+async function toggleMaintenance(enabled) {
+  const message = document.getElementById('maint-message')?.value || 'VEILX is under maintenance. Back soon!';
+  try {
+    await fetch('/api/admin/maintenance', {
+      method: 'POST',
+      headers: adminHeaders(),
+      body: JSON.stringify({ enabled, message })
+    });
+    const dot = document.getElementById('maint-status-dot');
+    const txt = document.getElementById('maint-status-text');
+    const banner = document.getElementById('maint-banner');
+    if (enabled) {
+      dot.style.background = 'var(--red)';
+      txt.textContent = '⚠ Maintenance Mode ACTIVE';
+      if (banner) banner.style.display = 'flex';
+      showToast('⚠ Maintenance mode enabled', 'error');
+    } else {
+      dot.style.background = 'var(--green)';
+      txt.textContent = 'Site is Live';
+      if (banner) banner.style.display = 'none';
+      showToast('✓ Site is live again!', 'success');
+    }
+  } catch(err) { showToast('Failed to update maintenance mode', 'error'); }
+}
+
+// ── Announcements ─────────────────────────────
+function previewAnnouncement() {
+  const text = document.getElementById('ann-text').value;
+  const type = document.getElementById('ann-type').value;
+  const preview = document.getElementById('ann-preview');
+  if (!text) { preview.style.display = 'none'; return; }
+  preview.className = 'announcement-preview ' + type;
+  preview.textContent = text;
+  preview.style.display = 'block';
+}
+
+async function pushAnnouncement() {
+  const text = document.getElementById('ann-text').value.trim();
+  const type = document.getElementById('ann-type').value;
+  if (!text) { showToast('Write an announcement first', 'error'); return; }
+  try {
+    await fetch('/api/admin/announcement', {
+      method: 'POST',
+      headers: adminHeaders(),
+      body: JSON.stringify({ text, type })
+    });
+    document.getElementById('current-ann').innerHTML = `<div style="padding:0.5rem 0.75rem;background:rgba(99,102,241,0.1);border-radius:8px;font-size:0.8rem">${text} <span class="badge badge-blue">${type}</span></div>`;
+    showToast('📢 Announcement pushed to all users!', 'success');
+  } catch(err) { showToast('Failed to push announcement', 'error'); }
+}
+
+async function clearAnnouncement() {
+  try {
+    await fetch('/api/admin/announcement', { method: 'POST', headers: adminHeaders(), body: JSON.stringify({ text: null }) });
+    document.getElementById('ann-text').value = '';
+    document.getElementById('ann-preview').style.display = 'none';
+    document.getElementById('current-ann').textContent = 'No active announcement';
+    showToast('✓ Announcement cleared', 'success');
+  } catch(err) { showToast('Failed to clear announcement', 'error'); }
+}
+
+// ── Coupons ───────────────────────────────────
+function setPreset(code, discount, type, plan, uses, expiry) {
+  document.getElementById('c-code').value = code;
+  document.getElementById('c-discount').value = discount;
+  document.getElementById('c-type').value = type;
+  document.getElementById('c-plan').value = plan;
+  document.getElementById('c-uses').value = uses;
+  document.getElementById('c-expiry').value = expiry;
+}
+
+async function createCoupon() {
+  const code = document.getElementById('c-code').value.trim().toUpperCase();
+  const discount = Number(document.getElementById('c-discount').value);
+  const type = document.getElementById('c-type').value;
+  const plan = document.getElementById('c-plan').value;
+  const maxUses = Number(document.getElementById('c-uses').value);
+  const expiryDays = Number(document.getElementById('c-expiry').value);
+
+  if (!code || !discount) { showToast('Code and discount required', 'error'); return; }
+
+  try {
+    const res = await fetch('/api/admin/coupons/create', {
+      method: 'POST',
+      headers: adminHeaders(),
+      body: JSON.stringify({ code, discount, type, plan, maxUses, expiryDays })
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error || 'Failed to create coupon', 'error'); return; }
+    showToast('✓ Coupon ' + code + ' created!', 'success');
+    document.getElementById('c-code').value = '';
+    document.getElementById('c-discount').value = '';
+    loadCoupons();
+  } catch(err) { showToast('Failed to create coupon', 'error'); }
+}
+
+async function loadCoupons() {
+  try {
+    const res = await fetch('/api/admin/coupons', { headers: { 'x-admin-session': adminToken } });
+    const data = await res.json();
+    const tbody = document.getElementById('coupons-table');
+    const countEl = document.getElementById('coupon-count');
+    countEl.textContent = '(' + (data.coupons?.length || 0) + ')';
+    if (!data.coupons || data.coupons.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:1.5rem">No coupons yet. Create one above.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.coupons.map(c => `
+      <tr>
+        <td style="color:var(--accent);font-weight:700">${c.code}</td>
+        <td>${c.discount}${c.type === 'percent' ? '%' : '₹'} off</td>
+        <td>${c.plan}</td>
+        <td>${c.uses}/${c.maxUses}</td>
+        <td style="font-size:0.65rem">${new Date(c.expiresAt).toLocaleDateString()}</td>
+        <td><span class="badge ${c.active ? 'badge-green' : 'badge-red'}">${c.active ? 'ACTIVE' : 'EXPIRED'}</span></td>
+        <td><button class="btn btn-danger" onclick="deleteCoupon('${c.code}')" style="padding:0.25rem 0.6rem;font-size:0.65rem">✕</button></td>
+      </tr>
+    `).join('');
+  } catch(err) {}
+}
+
+async function deleteCoupon(code) {
+  if (!confirm('Delete coupon ' + code + '?')) return;
+  try {
+    await fetch('/api/admin/coupons/' + code, { method: 'DELETE', headers: { 'x-admin-session': adminToken } });
+    showToast('✓ Coupon deleted', 'success');
+    loadCoupons();
+  } catch(err) { showToast('Failed to delete coupon', 'error'); }
+}
+
+// ── Moderation ────────────────────────────────
+async function clearContent(type) {
+  const labels = { confessions: 'ALL confessions', problems: 'ALL problems', polls: 'ALL polls', rooms: 'ALL public rooms' };
+  if (!confirm('Permanently delete ' + labels[type] + '? This cannot be undone!')) return;
+  try {
+    await fetch('/api/admin/content/' + type, { method: 'DELETE', headers: { 'x-admin-session': adminToken } });
+    showToast('✓ ' + labels[type] + ' cleared', 'success');
+    loadStats();
+    setTimeout(updateModerationPage, 500);
+  } catch(err) { showToast('Failed to clear content', 'error'); }
+}
+
+// ── Helpers ───────────────────────────────────
+function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val !== undefined ? val : '—'; }
+
+function formatUptime(secs) {
+  if (secs < 60) return secs + 's';
+  if (secs < 3600) return Math.floor(secs / 60) + 'm';
+  return Math.floor(secs / 3600) + 'h ' + Math.floor((secs % 3600) / 60) + 'm';
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + (type || '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Enter key on login
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') adminLogin();
+});
+</script>
+</body>
+</html>

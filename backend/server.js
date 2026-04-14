@@ -255,6 +255,265 @@ const upload = multer({
 app.get('/api/health', (req, res) => res.status(200).json({ status: 'ok' }));
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
+// ════════════════════════════════════════════
+// VEILX Phase 6 — Admin Panel Routes
+// // ════════════════════════════════════════════
+
+const adminSessions = new Map();
+const siteStats = {
+  totalVisits: 0,
+  activeUsers: new Set(),
+  peakUsers: 0,
+  startTime: Date.now()
+};
+
+// Feature flags — admin can toggle these
+const featureFlags = {
+  premium: true,
+  polls: true,
+  confessions: true,
+  leaderboard: true,
+  browseRooms: true,
+  feed: true,
+  studyGroups: true,
+  gamingZone: true,
+  chatbot: true,
+  fileSharing: true
+};
+
+// Coupon store
+const couponStore = new Map();
+// Structure: code -> { discount, type, plan, expiresAt, uses, maxUses, createdAt }
+
+// Announcements
+let siteAnnouncement = null;
+let maintenanceMode = false;
+
+// ── Track visits via middleware ───────────────
+app.use((req, res, next) => {
+  if (!req.path.startsWith('/api/') && !req.path.startsWith('/admin')) {
+    siteStats.totalVisits++;
+  }
+  next();
+});
+
+// ── Admin auth middleware ─────────────────────
+function requireAdmin(req, res, next) {
+  // Check secret key in query
+  const secretKey = req.query.key || req.headers['x-admin-key'];
+  if (secretKey && secretKey === (process.env.ADMIN_SECRET_KEY || 'veilx_admin_secret_2025')) {
+    return next();
+  }
+  // Check session token
+  const sessionToken = req.headers['x-admin-session'] || req.cookies?.adminSession;
+  if (sessionToken && adminSessions.has(sessionToken)) {
+    const session = adminSessions.get(sessionToken);
+    if (session.expiresAt > Date.now()) return next();
+    adminSessions.delete(sessionToken);
+  }
+  return res.status(401).json({ error: 'Unauthorized' });
+}
+
+// ── Admin Login ───────────────────────────────
+app.post('/api/admin/login', (req, res) => {
+  const { username, password, secretKey } = req.body;
+  const validUser = process.env.ADMIN_USERNAME || 'veilxadmin';
+  const validPass = process.env.ADMIN_PASSWORD || 'veilx@admin2025';
+  const validKey  = process.env.ADMIN_SECRET_KEY || 'veilx_admin_secret_2025';
+
+  const keyOk = secretKey === validKey;
+  const credOk = username === validUser && password === validPass;
+
+  if (!keyOk || !credOk) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  adminSessions.set(token, { createdAt: Date.now(), expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
+  res.json({ success: true, token, expiresIn: '24 hours' });
+});
+
+// ── Admin Logout ──────────────────────────────
+app.post('/api/admin/logout', requireAdmin, (req, res) => {
+  const token = req.headers['x-admin-session'];
+  if (token) adminSessions.delete(token);
+  res.json({ success: true });
+});
+
+// ── Dashboard Stats ───────────────────────────
+app.get('/api/admin/stats', requireAdmin, (req, res) => {
+  const activeRooms = rooms.size;
+  const totalMembers = [...rooms.values()].reduce((a, r) => a + r.members.size, 0);
+  const uptime = Math.floor((Date.now() - siteStats.startTime) / 1000);
+
+  res.json({
+    live: {
+      activeRooms,
+      totalOnlineUsers: totalMembers,
+      peakUsers: siteStats.peakUsers,
+      totalVisits: siteStats.totalVisits,
+      uptime: uptime
+    },
+    content: {
+      totalProblems: problemStore.size,
+      totalConfessions: confessionsStore.size,
+      totalPolls: pollStore.size,
+      totalPublicRooms: publicRooms.size,
+      activeStudyRooms: studyRooms.size,
+      sharedFiles: fileStore.size
+    },
+    premium: {
+      activeSessions: premiumSessions.size,
+      totalCoupons: couponStore.size,
+      activeCoupons: [...couponStore.values()].filter(c => c.expiresAt > Date.now()).length
+    },
+    leaderboard: {
+      totalEntries: leaderboardStore.size
+    },
+    featureFlags,
+    maintenanceMode,
+    announcement: siteAnnouncement
+  });
+});
+
+// ── Feature Flags ─────────────────────────────
+app.post('/api/admin/features', requireAdmin, (req, res) => {
+  const { feature, enabled } = req.body;
+  if (!(feature in featureFlags)) return res.status(400).json({ error: 'Unknown feature' });
+  featureFlags[feature] = !!enabled;
+  // Broadcast to all connected clients
+  io.emit('feature_flags_updated', featureFlags);
+  res.json({ success: true, feature, enabled: featureFlags[feature] });
+});
+
+app.get('/api/admin/features', requireAdmin, (req, res) => {
+  res.json({ featureFlags });
+});
+
+// ── Public feature flags (frontend reads this) ─
+app.get('/api/features', (req, res) => {
+  res.json({ featureFlags, maintenanceMode, announcement: siteAnnouncement });
+});
+
+// ── Maintenance Mode ──────────────────────────
+app.post('/api/admin/maintenance', requireAdmin, (req, res) => {
+  const { enabled, message } = req.body;
+  maintenanceMode = !!enabled;
+  if (enabled) {
+    io.emit('maintenance_mode', { enabled: true, message: message || 'VEILX is under maintenance. Back soon!' });
+  } else {
+    io.emit('maintenance_mode', { enabled: false });
+  }
+  res.json({ success: true, maintenanceMode });
+});
+
+// ── Announcements ─────────────────────────────
+app.post('/api/admin/announcement', requireAdmin, (req, res) => {
+  const { text, type, duration } = req.body;
+  if (!text) { siteAnnouncement = null; io.emit('announcement_cleared'); return res.json({ success: true, cleared: true }); }
+  siteAnnouncement = { text: sanitize(text, 200), type: type || 'info', createdAt: Date.now(), duration: duration || 0 };
+  io.emit('announcement', siteAnnouncement);
+  res.json({ success: true, announcement: siteAnnouncement });
+});
+
+// ── Coupon Management ─────────────────────────
+app.post('/api/admin/coupons/create', requireAdmin, (req, res) => {
+  const { code, discount, plan, maxUses, expiryDays, type } = req.body;
+  if (!code || !discount) return res.status(400).json({ error: 'Code and discount required' });
+  const cleanCode = sanitize(code.toUpperCase().replace(/\s/g, ''), 20);
+  if (couponStore.has(cleanCode)) return res.status(400).json({ error: 'Coupon code already exists' });
+  couponStore.set(cleanCode, {
+    code: cleanCode,
+    discount: Math.min(100, Math.max(1, Number(discount))),
+    plan: plan || 'both',
+    type: type || 'percent', // percent | flat
+    maxUses: maxUses || 100,
+    uses: 0,
+    expiresAt: Date.now() + ((expiryDays || 30) * 24 * 60 * 60 * 1000),
+    createdAt: Date.now()
+  });
+  res.json({ success: true, coupon: couponStore.get(cleanCode) });
+});
+
+app.get('/api/admin/coupons', requireAdmin, (req, res) => {
+  const coupons = [...couponStore.values()].map(c => ({
+    ...c,
+    active: c.expiresAt > Date.now() && c.uses < c.maxUses
+  }));
+  res.json({ coupons });
+});
+
+app.delete('/api/admin/coupons/:code', requireAdmin, (req, res) => {
+  couponStore.delete(req.params.code.toUpperCase());
+  res.json({ success: true });
+});
+
+// ── Public coupon validation (used at checkout) ─
+app.post('/api/coupons/validate', (req, res) => {
+  const { code, plan } = req.body;
+  const coupon = couponStore.get((code || '').toUpperCase().trim());
+  if (!coupon) return res.status(404).json({ error: 'Invalid coupon code' });
+  if (coupon.expiresAt < Date.now()) return res.status(410).json({ error: 'Coupon expired' });
+  if (coupon.uses >= coupon.maxUses) return res.status(410).json({ error: 'Coupon fully used' });
+  if (coupon.plan !== 'both' && coupon.plan !== plan) return res.status(400).json({ error: 'Coupon not valid for this plan' });
+  res.json({ valid: true, discount: coupon.discount, type: coupon.type, code: coupon.code });
+});
+
+// ── Apply coupon on activation ────────────────
+app.post('/api/premium/activate', (req, res) => {
+  const { plan, paymentId, couponCode } = req.body;
+  const prices = { plus: 49, pro: 149 };
+  if (!prices[plan]) return res.status(400).json({ error: 'Invalid plan' });
+  if (!paymentId) return res.status(400).json({ error: 'Payment ID required' });
+
+  let finalPrice = prices[plan];
+  let discountApplied = 0;
+
+  if (couponCode) {
+    const coupon = couponStore.get(couponCode.toUpperCase().trim());
+    if (coupon && coupon.expiresAt > Date.now() && coupon.uses < coupon.maxUses) {
+      if (coupon.type === 'percent') discountApplied = Math.floor(finalPrice * coupon.discount / 100);
+      else discountApplied = coupon.discount;
+      finalPrice = Math.max(0, finalPrice - discountApplied);
+      coupon.uses++;
+    }
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = Date.now() + (30 * 24 * 60 * 60 * 1000);
+  premiumSessions.set(token, { plan, paymentId: paymentId.substring(0, 50), expiresAt, createdAt: Date.now(), finalPrice, discountApplied });
+  res.json({ success: true, token, plan, expiresAt, finalPrice, discountApplied, message: 'Premium activated!' });
+});
+
+// ── Content Moderation ────────────────────────
+app.delete('/api/admin/content/confessions', requireAdmin, (req, res) => {
+  confessionsStore.clear();
+  res.json({ success: true, message: 'All confessions cleared' });
+});
+
+app.delete('/api/admin/content/problems', requireAdmin, (req, res) => {
+  problemStore.clear();
+  res.json({ success: true, message: 'All problems cleared' });
+});
+
+app.delete('/api/admin/content/polls', requireAdmin, (req, res) => {
+  pollStore.clear();
+  res.json({ success: true, message: 'All polls cleared' });
+});
+
+app.delete('/api/admin/content/rooms', requireAdmin, (req, res) => {
+  publicRooms.clear();
+  res.json({ success: true, message: 'All public rooms cleared' });
+});
+
+// ── Cleanup admin sessions ────────────────────
+setInterval(() => {
+  const now = Date.now();
+  for (const [token, session] of adminSessions.entries()) {
+    if (session.expiresAt < now) adminSessions.delete(token);
+  }
+}, 60 * 60 * 1000);
+
 // ── Rooms ────────────────────────────────────
 app.post('/api/rooms/create', (req, res) => {
   const { type } = req.body;
