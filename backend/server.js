@@ -318,8 +318,8 @@ function requireAdmin(req, res, next) {
 app.post('/api/admin/login', (req, res) => {
   const { username, password, secretKey } = req.body;
   const validUser = process.env.ADMIN_USERNAME || 'veilxadmin';
-  const validPass = process.env.ADMIN_PASSWORD || 'veilx@admin2025';
-  const validKey  = process.env.ADMIN_SECRET_KEY || 'veilx_admin_secret_2025';
+  const validPass = process.env.ADMIN_PASSWORD || 'veilx@admin2026';
+  const validKey  = process.env.ADMIN_SECRET_KEY || 'veilx_admin_secret_2026';
 
   const keyOk = secretKey === validKey;
   const credOk = username === validUser && password === validPass;
